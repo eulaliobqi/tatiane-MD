@@ -58,7 +58,9 @@ process TOPOLOGY {
         echo "ERRO: merge_small_molecule_topology.py falhou"; exit 1
     fi
 
-    cp ${posre_unl_itp} .
+    # posre_unl_itp ja esta no cwd (staged pelo Nextflow como input declarado) —
+    # nao precisa copiar; um `cp` pra si mesmo aqui gerava erro espurio
+    # ("are the same file"), pego rodando de verdade no servidor
     NTOTAL=\$(awk 'NR==2{print \$1}' complexo.gro)
     echo "[OK] TOPOLOGY concluido: complexo.gro com \${NTOTAL} atomos" >&2
     """
