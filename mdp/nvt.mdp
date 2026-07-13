@@ -1,0 +1,31 @@
+; Equilibracao NVT (200 ps) — CHARMM36 + CGenFF
+; POSRES restringe o receptor (posre.itp gerado pelo pdb2gmx),
+; POSRES_UNL restringe o ligante (posre_UNL.itp gerado por gmx genrestr)
+define          = -DPOSRES -DPOSRES_UNL
+integrator      = md
+dt              = 0.002
+nsteps          = 100000
+nstxout         = 1000
+nstvout         = 1000
+nstenergy       = 500
+cutoff-scheme   = Verlet
+nstlist         = 20
+coulombtype     = PME
+rcoulomb        = 1.2
+vdwtype         = Cut-off
+vdw-modifier    = Force-switch
+rvdw-switch     = 1.0
+rvdw            = 1.2
+DispCorr        = no
+constraints     = h-bonds
+constraint-algorithm = LINCS
+continuation    = no
+gen-vel         = yes
+gen-temp        = 300
+gen-seed        = -1
+tcoupl          = V-rescale
+tc-grps         = Protein Non-Protein
+tau-t           = 0.1 0.1
+ref-t           = 300 300
+pcoupl          = no
+pbc             = xyz

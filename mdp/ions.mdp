@@ -1,0 +1,4 @@
+; mdp minimo apenas para gerar o .tpr usado por gmx genion
+integrator    = steep
+nsteps        = 0
+cutoff-scheme = Verlet

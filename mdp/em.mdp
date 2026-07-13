@@ -1,0 +1,19 @@
+; Minimizacao de energia — CHARMM36 + CGenFF (receptor 2I9T + daidzeina/UNL)
+; Nao-bonded settings seguem a recomendacao oficial CHARMM36 para GROMACS
+; (Force-switch + rvdw-switch, DispCorr=no) — DIFERENTE do template AMBER99SB-ILDN
+; usado nos outros pipelines do laboratorio (MD-gromacs/Milena-MD), que usa
+; vdwtype=Cut-off simples sem vdw-modifier. Nao copiar o em.mdp AMBER para ca.
+integrator      = steep
+emtol           = 1000.0
+emstep          = 0.01
+nsteps          = 50000
+cutoff-scheme   = Verlet
+nstlist         = 20
+coulombtype     = PME
+rcoulomb        = 1.2
+vdwtype         = Cut-off
+vdw-modifier    = Force-switch
+rvdw-switch     = 1.0
+rvdw            = 1.2
+DispCorr        = no
+pbc             = xyz

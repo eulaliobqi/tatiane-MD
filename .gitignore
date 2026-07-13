@@ -1,0 +1,22 @@
+# Saidas regeneraveis do pipeline (recriadas por bin/run_md.sh e bin/analyze.sh)
+results/
+work/
+
+# Trajetorias/checkpoints grandes (nunca commitar binarios de MD)
+*.xtc
+*.trr
+*.cpt
+*.edr
+*.tpr
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config local do Claude Code (nao faz parte do pipeline)
+.claude/
