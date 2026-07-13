@@ -17,10 +17,10 @@ process TOPOLOGY {
 
     script:
     """
-    echo "=== TOPOLOGY: ${meta.id} (pdb2gmx charmm36-mar2019 + merge CGenFF) ===" >&2
+    echo "=== TOPOLOGY: ${meta.id} (pdb2gmx charmm36-feb2026_cgenff-5.0 + merge CGenFF) ===" >&2
 
     # gmx pdb2gmx localiza NAME.ff por nome apenas se a pasta existir no cwd
-    cp -r ${projectDir}/ff/charmm36-mar2019.ff .
+    cp -r ${projectDir}/ff/charmm36-feb2026_cgenff-5.0.ff .
 
     awk '/^ATOM/ && substr(\$0,22,1)=="A" {print}' ${complexo_pdb} > receptor.pdb
     echo "TER" >> receptor.pdb
@@ -38,7 +38,7 @@ process TOPOLOGY {
         -o receptor.gro \\
         -p receptor.top \\
         -i posre.itp \\
-        -ff charmm36-mar2019 \\
+        -ff charmm36-feb2026_cgenff-5.0 \\
         -water tip3p \\
         -ignh \\
         2>&1 | tee pdb2gmx.log

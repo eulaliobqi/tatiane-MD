@@ -17,7 +17,7 @@ process LIGAND_TOPOLOGY {
 
     python3 ${projectDir}/bin/cgenff_charmm2gmx.py UNL \\
         ${ligand_mol2} ${ligand_str} \\
-        ${projectDir}/ff/charmm36-mar2019.ff \\
+        ${projectDir}/ff/charmm36-feb2026_cgenff-5.0.ff \\
         2>&1 | tee cgenff_charmm2gmx.log
 
     if [ ! -s unl.itp ]; then

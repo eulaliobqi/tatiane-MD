@@ -41,24 +41,51 @@ cd ~/gromacs/Tatiana-MD
 nextflow run main.nf --outdir ~/gromacs/results-tatiana -profile local,conda
 ```
 
-**Nao roda `gh`/Nextflow localmente nesta sessao** (Windows sem Nextflow/Java 17+
-instalado, sem GROMACS) — o pipeline foi escrito e revisado por inspecao estatica
-contra os mesmos padroes ja validados em producao no MD-gromacs/Milena-MD, mas
-**precisa ser testado de verdade no servidor antes de confiar 100%** — ver
-"Riscos conhecidos" abaixo.
+**Nao rodei `gh`/Nextflow localmente** (Windows sem Nextflow/Java 17+ instalado,
+sem GROMACS) — o pipeline foi escrito e revisado por inspecao estatica antes da
+primeira execucao real, mas so a execucao real no servidor pega certas classes
+de bug (ver abaixo). Rode sempre com `-with-report -with-trace` e acompanhe de
+perto as primeiras etapas.
 
-### Riscos conhecidos (nao testados em ambiente real)
+### Bugs reais encontrados na primeira execucao no servidor (2026-07-13)
 
-- Todo o wiring de canais Groovy (`main.nf`) foi escrito seguindo os padroes
-  exatos ja validados no MD-gromacs/Milena-MD (join por `meta.id`, nao por
-  `meta` Map inteiro — bug real documentado no Milena-MD que fazia o join
-  nunca emitir nada, silenciosamente), mas nunca foi executado. Primeira
-  rodada real deve ser acompanhada de perto (`nextflow run ... -with-report
-  -with-trace`).
-- Modulo MMGBSA foi escrito pelo agente `bioinformatics` (a pedido explicito),
-  aplicando a causa-raiz mais provavel do bug que derrubou essa mesma etapa 3x
-  no Milena-MD — mas nao pode ser testado sem `gmx_MMPBSA` real. `errorStrategy
-  'ignore'` garante que uma falha aqui nao derruba o resto do pipeline.
+Nenhum destes apareceu na revisao estatica — todos so surgiram rodando de
+verdade. Todos ja corrigidos e commitados:
+
+1. **`pdb2pqr_process_charmm.py`**: bug de indentacao deixava passar qualquer
+   linha do PDB2PQR (REMARK/CRYST1/TER), nao so ATOM/HETATM.
+2. **Residuo N-terminal com dois nomes**: o PDB2PQR (`--ff CHARMM`) rotula os
+   atomos do patch de terminal-N (N, CA) com o nome do patch (`TER`) em vez do
+   nome real do residuo — o mesmo residuo (HIS17) saia com `N`/`CA`="TER" e o
+   resto="HIS", fazendo o `pdb2gmx` abortar ("chain ... do not have a
+   consistent type"). Corrigido com normalizacao em duas passadas no mesmo
+   script (agrupa por cadeia+resSeq, substitui "TER" pelo nome real).
+3. **`cp` redundante em `TOPOLOGY`**: `posre_UNL.itp` ja chegava staged no cwd
+   como input declarado; copiar pra si mesmo falhava ("are the same file").
+4. **Exclusao de input do glob de output** (`modules/local/topology/main.nf`):
+   o Nextflow exclui por padrao arquivos de input do casamento de
+   `path("*.itp")`/`path("*.prm")` — como `unl.itp`/`unl.prm` estavam staged
+   direto no cwd (mesmo nome do input), o glob ficava vazio e a task falhava
+   com exitcode 0 mas "Missing output file(s)". Corrigido com o mesmo padrao
+   de staging em subdiretorio + cópia explicita já usado em
+   `box_solvate_ions`/`minimization`/`nvt`/`npt`/`production`.
+5. **Descompasso de versao do CGenFF** (o mais sério): `ff/charmm36-mar2019.ff`
+   (port original, vendorizado no inicio do projeto) bundla CGenFF **4.1**,
+   mas o `.str` do ParamChem para a daidzeina e CGenFF **5.0** — causando 8
+   erros reais de `grompp` ("No default Proper Dih./U-B types") concentrados
+   no oxigenio do anel pirano da cromona (a mesma regiao que o CGenFF ja
+   sinalizava com `param penalty=53`). **Trocado o FF port** para
+   `charmm36-feb2026_cgenff-5.0.ff` (MacKerell Lab, ferramenta `charmm2gmx`,
+   Wacha & Lemkul JCIM 2023), que bundla CGenFF 5.0 e cobre os 8 termos
+   (confirmado por grep contra a conversao real, nao suposicao). Considerado
+   e descartado: trocar para AMBER99SB-ILDN+GAFF2/ACPYPE (como
+   MD-gromacs/Milena-MD) resolveria tambem, mas exigiria refazer protonacao,
+   todos os `.mdp` e o modulo MM-GBSA — mudanca bem maior sem garantia de
+   nao ter sua propria lacuna de parametrizacao nessa mesma regiao do anel.
+
+**O que ainda nao foi validado de verdade**: nada além de `TOPOLOGY`/
+`BOX_SOLVATE_IONS` rodou ainda (nenhum GPU/mdrun real). `MINIMIZATION` em
+diante, `MMGBSA`, `PLOT`/`REPORT` continuam sem execucao real.
 
 ## Antes de rodar — decisoes ja tomadas, revisar se necessario
 
@@ -152,8 +179,11 @@ assets/     - samplesheet.csv (sample_id,receptor,ligand_mol2,ligand_str)
 inputs/     - PDBs/mol2/str originais (receptor bruto, receptor "fixed" por
               PDBFixer [nao usado diretamente — ver nota de protonacao acima],
               ligante docado, saida do ParamChem/CGenFF)
-ff/         - CHARMM36 port (charmm36-mar2019.ff, vendorizado do GitHub
-              intbio/gromacs_ff — servidor bloqueia HTTPS externo exceto github.com)
+ff/         - CHARMM36 port (charmm36-feb2026_cgenff-5.0.ff, MacKerell Lab,
+              ferramenta charmm2gmx — Wacha & Lemkul, JCIM 2023 — bundla
+              CGenFF 5.0, casando com a versao do .str do ParamChem; baixado
+              de mackerell.umaryland.edu e vendorizado aqui porque o servidor
+              bloqueia HTTPS externo exceto github.com)
 bin/        - scripts reutilizados pelos processos Nextflow (conversao de
               topologia, preparo de complexo, merge, plot, gerador de relatorio)
               + bin/run_md.sh e bin/analyze.sh (fallback bash standalone)

@@ -42,7 +42,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INPUTS="${ROOT_DIR}/inputs"
 BIN="${ROOT_DIR}/bin"
 MDP="${ROOT_DIR}/mdp"
-FF_SRC="${ROOT_DIR}/ff/charmm36-mar2019.ff"
+FF_SRC="${ROOT_DIR}/ff/charmm36-feb2026_cgenff-5.0.ff"
 OUT="${ROOT_DIR}/results/${SAMPLE_ID}"
 
 mkdir -p "${OUT}"
@@ -129,11 +129,11 @@ stage_topology() {
     local final="${d}/topol.top"
     [ -s "${final}" ] && { log "TOPOLOGY: ja concluido, pulando"; return; }
     mkdir -p "${d}"; cd "${d}"
-    log "TOPOLOGY: pdb2gmx (charmm36-mar2019, tip3p) + merge com ligante CGenFF"
+    log "TOPOLOGY: pdb2gmx (charmm36-feb2026_cgenff-5.0, tip3p) + merge com ligante CGenFF"
 
     # gmx pdb2gmx localiza NAME.ff por nome apenas se a pasta existir no cwd
     # (ou via GMXLIB) — copia local do FF vendorizado
-    [ -d charmm36-mar2019.ff ] || cp -r "${FF_SRC}" charmm36-mar2019.ff
+    [ -d charmm36-feb2026_cgenff-5.0.ff ] || cp -r "${FF_SRC}" charmm36-feb2026_cgenff-5.0.ff
 
     awk '/^ATOM/ && substr($0,22,1)=="A" {print}' "${OUT}/02_complex/complex.pdb" > receptor.pdb
     echo "TER" >> receptor.pdb
@@ -151,7 +151,7 @@ stage_topology() {
         -o receptor.gro \
         -p receptor.top \
         -i posre.itp \
-        -ff charmm36-mar2019 \
+        -ff charmm36-feb2026_cgenff-5.0 \
         -water tip3p \
         -ignh \
         2>&1 | tee pdb2gmx.log
@@ -192,14 +192,14 @@ stage_box_solvate_ions() {
     cp "${topo_dir}/topol.top" topol.top
     cp "${topo_dir}"/*.itp . 2>/dev/null || true
     cp "${topo_dir}"/*.prm . 2>/dev/null || true
-    [ -d charmm36-mar2019.ff ] || cp -r "${FF_SRC}" charmm36-mar2019.ff
+    [ -d charmm36-feb2026_cgenff-5.0.ff ] || cp -r "${FF_SRC}" charmm36-feb2026_cgenff-5.0.ff
 
     "${GMX}" editconf -f "${topo_dir}/complexo.gro" -o box.gro \
         -c -d "${BOX_DIST}" -bt "${BOX_TYPE}"
 
     # spc216.gro (bundled com o GROMACS) e so o template de coordenadas da
     # caixa de agua equilibrada — os parametros reais vem do #include
-    # "charmm36-mar2019.ff/tip3p.itp" ja presente no topol.top (via pdb2gmx
+    # "charmm36-feb2026_cgenff-5.0.ff/tip3p.itp" ja presente no topol.top (via pdb2gmx
     # -water tip3p). Mesma pratica usada no pipeline AMBER do laboratorio.
     "${GMX}" solvate -cp box.gro -cs spc216.gro \
         -p topol.top -o solv.gro
@@ -225,10 +225,10 @@ stage_minimization() {
     mkdir -p "${d}"; cd "${d}"
     log "MINIMIZATION: steepest descent, emtol=1000"
 
-    # topol.top referencia "charmm36-mar2019.ff/forcefield.itp" como caminho
+    # topol.top referencia "charmm36-feb2026_cgenff-5.0.ff/forcefield.itp" como caminho
     # relativo ao cwd do grompp — precisa da pasta do FF presente em CADA
     # etapa, nao so na que rodou o pdb2gmx
-    [ -d charmm36-mar2019.ff ] || cp -r "${FF_SRC}" charmm36-mar2019.ff
+    [ -d charmm36-feb2026_cgenff-5.0.ff ] || cp -r "${FF_SRC}" charmm36-feb2026_cgenff-5.0.ff
 
     cp "${OUT}/04_box/topol.top" topol.top
     cp "${OUT}/04_box"/*.itp . 2>/dev/null || true
@@ -252,7 +252,7 @@ stage_nvt() {
     mkdir -p "${d}"; cd "${d}"
     log "NVT: 200 ps, 300 K, V-rescale, posicoes restritas"
 
-    [ -d charmm36-mar2019.ff ] || cp -r "${FF_SRC}" charmm36-mar2019.ff
+    [ -d charmm36-feb2026_cgenff-5.0.ff ] || cp -r "${FF_SRC}" charmm36-feb2026_cgenff-5.0.ff
 
     cp "${OUT}/05_em/topol.top" topol.top
     cp "${OUT}/05_em"/*.itp . 2>/dev/null || true
@@ -277,7 +277,7 @@ stage_npt() {
     mkdir -p "${d}"; cd "${d}"
     log "NPT: 500 ps, 1 bar, Berendsen, posicoes restritas"
 
-    [ -d charmm36-mar2019.ff ] || cp -r "${FF_SRC}" charmm36-mar2019.ff
+    [ -d charmm36-feb2026_cgenff-5.0.ff ] || cp -r "${FF_SRC}" charmm36-feb2026_cgenff-5.0.ff
 
     cp "${OUT}/06_nvt/topol.top" topol.top
     cp "${OUT}/06_nvt"/*.itp . 2>/dev/null || true
@@ -302,7 +302,7 @@ stage_production() {
     mkdir -p "${d}"; cd "${d}"
     log "PRODUCTION: ${TIME_NS} ns, 300 K, 1 bar, Parrinello-Rahman"
 
-    [ -d charmm36-mar2019.ff ] || cp -r "${FF_SRC}" charmm36-mar2019.ff
+    [ -d charmm36-feb2026_cgenff-5.0.ff ] || cp -r "${FF_SRC}" charmm36-feb2026_cgenff-5.0.ff
 
     cp "${OUT}/07_npt/topol.top" topol.top
     cp "${OUT}/07_npt"/*.itp . 2>/dev/null || true

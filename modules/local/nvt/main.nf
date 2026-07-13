@@ -20,7 +20,7 @@ process NVT {
     cp ${top} topol.top
     cp itp_in/*.itp .
     cp prm_in/*.prm . 2>/dev/null || true
-    cp -r ${projectDir}/ff/charmm36-mar2019.ff .
+    cp -r ${projectDir}/ff/charmm36-feb2026_cgenff-5.0.ff .
 
     cat > nvt.mdp << MDP_EOF
 ; POSRES restringe o receptor (posre.itp do pdb2gmx), POSRES_UNL restringe

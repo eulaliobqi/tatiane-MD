@@ -16,7 +16,7 @@ process BOX_SOLVATE_IONS {
     cp ${top} topol.top
     cp itp_in/*.itp .
     cp prm_in/*.prm . 2>/dev/null || true
-    cp -r ${projectDir}/ff/charmm36-mar2019.ff .
+    cp -r ${projectDir}/ff/charmm36-feb2026_cgenff-5.0.ff .
 
     # Caixa cubica com margem de ${params.box_dist} nm — 1,2nm (nao os 2,0nm
     # usados nos pipelines proteina-peptideo deste laboratorio): complexo
@@ -27,7 +27,7 @@ process BOX_SOLVATE_IONS {
 
     # spc216.gro (bundled com GROMACS) e so o template de coordenadas da caixa
     # de agua equilibrada — os parametros reais vem do #include
-    # charmm36-mar2019.ff/tip3p.itp ja presente no topol.top
+    # charmm36-feb2026_cgenff-5.0.ff/tip3p.itp ja presente no topol.top
     ${params.gmx_cmd} solvate \\
         -cp box.gro -cs spc216.gro \\
         -p topol.top -o solv.gro

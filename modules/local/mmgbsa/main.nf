@@ -88,7 +88,7 @@ process MMGBSA {
     cp input.top topol.top
     cp itp_in/*.itp . 2>/dev/null || true
     cp prm_in/*.prm . 2>/dev/null || true
-    cp -r ${projectDir}/ff/charmm36-mar2019.ff .
+    cp -r ${projectDir}/ff/charmm36-feb2026_cgenff-5.0.ff .
 
     # Sanity check (nao fatal): confere que e a topologia JA solvatada
     # (BOX_SOLVATE_IONS), nao a pre-solvatacao (TOPOLOGY) — regra
