@@ -24,9 +24,15 @@ pequena molecula em GROMACS (tutorial Lemkul, T4-lisozima+JZ4).
 - [x] MM-GBSA (`gmx_MMPBSA`) — reescrito do zero evitando o bug real que
       derrubou essa mesma etapa no projeto irmao Milena-MD (ver secao dedicada)
 - [x] Gerador de relatorio (`docs/artigo_md.md`, com secao de MM-GBSA)
-- [ ] **Simulacao ainda NAO rodou** — nada foi executado no servidor, so preparado localmente
-- [ ] Push para `github.com/eulaliobqi/tatiane-MD` (a fazer por voce — remoto ja
-      configurado localmente, so falta autenticar e confirmar)
+- [x] Push para `github.com/eulaliobqi/tatiane-MD` — 6 commits, `de99351` o mais recente
+- [x] **Rodando de verdade no servidor** (2026-07-13): `PREPARE_PH` → `LIGAND_TOPOLOGY`
+      → `PREPARE_COMPLEX` → `TOPOLOGY` → `BOX_SOLVATE_IONS` → `MINIMIZATION` todos
+      completos com sucesso; `NVT` em andamento (primeira etapa com uso pesado de
+      GPU — CUDA confirmado disponivel e ativo antes do inicio, ver secao
+      "Bugs reais" abaixo pro historico completo de debugging)
+- [ ] `NPT` → `PRODUCTION` (100 ns, a etapa longa) → `POSTPROCESS` → analises →
+      `MMGBSA`/`PLOT`/`REPORT` — retomar amanha com `-resume` acompanhando
+      `nextflow.log` no screen `tatiana-2i9t-daidzeina`
 
 ## Arquitetura Nextflow
 
@@ -107,50 +113,50 @@ energia livre/ligacao devem ser tratados como preliminares ate validacao adicion
 (ex. reotimizacao QM dos dihedros de maior penalidade). Ver `inputs/ligand-UNL.str`
 (comentario `param penalty= 53.000 ; charge penalty= 23.263`).
 
-## Como rodar amanha
+## Status em 2026-07-13 (fim da sessao) — como continuar
+
+Pipeline pushado, rodando de verdade no servidor desde hoje. `PREPARE_PH` →
+`LIGAND_TOPOLOGY` → `PREPARE_COMPLEX` → `TOPOLOGY` → `BOX_SOLVATE_IONS` →
+`MINIMIZATION` completos com sucesso (5 bugs reais encontrados e corrigidos
+no processo, ver secao dedicada abaixo). `NVT` em andamento quando a sessao
+terminou — CUDA confirmado ativo (`nvidia-smi` + `gmx_mpi -version` checados
+antes do inicio).
+
+**Pra continuar amanha**, no servidor, dentro do mesmo screen:
 
 ```bash
-# 1. Local (Windows) — revisar o diff, depois push (repo ja existe, vazio)
-cd ~/.claude/Tatiana-MD
-git push -u origin main
+screen -r tatiana-2i9t-daidzeina   # ou screen -d -r se já estiver attached em outro lugar
+# conferir onde parou:
+tail -30 nextflow.log
+nvidia-smi   # confirma se ainda esta rodando ou se terminou/caiu
 
-# 2. Servidor
-ssh eulalio@200.235.143.10
-screen -S tatiana-2i9t-daidzeina
-mamba activate md-gromacs
-cd ~/gromacs && git clone https://github.com/eulaliobqi/tatiane-MD.git   # ou git pull se ja existir
-cd tatiane-MD
-df -h /home   # checar espaco antes (regra do laboratorio)
+# se caiu e precisar retomar:
+cd ~/gromacs/tatiane-MD
+git pull   # so por seguranca, caso eu tenha ajustado mais alguma coisa
+nextflow run main.nf --outdir ~/gromacs/results-tatiana -profile local,conda \
+    -with-report -with-trace -resume 2>&1 | tee -a nextflow.log
+```
 
-# 2b. Envs conda dedicados (so na PRIMEIRA vez — nao existem ainda neste
-#     projeto; nao reusar os do Milena-MD, isolamento entre projetos-execucao)
+**Depois que `PRODUCTION`/`POSTPROCESS`/`ANALYSES` terminarem** (a etapa longa,
+100 ns), os passos finais rodam automaticamente dentro do proprio Nextflow
+(`MMGBSA`, `PLOT`, `REPORT`) — mas os 2 envs conda dedicados deste projeto
+(`plot-env-tatiana`, `mmgbsa-env`) **ainda nao foram criados** no servidor
+(nao confirmamos isso na sessao). Rodar antes do Nextflow chegar em `PLOT`:
+
+```bash
 mamba create -n plot-env-tatiana python=3.11 numpy matplotlib -y
 mamba create -n mmgbsa-env -c conda-forge -c bioconda gmx_mmpbsa python=3.11 ambertools -y
-# gmx_MMPBSA tambem precisa de um binario GROMACS no PATH desse env (usa
-# editconf/trjconv internamente) — o modulo MMGBSA avisa no log se faltar:
-mamba install -n mmgbsa-env -c conda-forge gromacs -y   # build CPU, sem CUDA
+mamba install -n mmgbsa-env -c conda-forge gromacs -y   # gmx_MMPBSA precisa de um gmx no PATH desse env
+```
 
-# 3a. Via Nextflow (recomendado — arquitetura completa, retomavel via -resume)
-nextflow run main.nf --outdir ~/gromacs/results-tatiana -profile local,conda \
-    -with-report -with-trace 2>&1 | tee nextflow.log
-# producao mais longa: --time_ns 200
+Fallback bash equivalente (se preferir nao usar Nextflow numa etapa especifica):
 
-# 3b. OU via bash (fallback/referencia, mesma logica sem o overhead do Nextflow)
-bash bin/run_md.sh 2>&1 | tee run_md.log   # TIME_NS=200 bash bin/run_md.sh p/ mais longo
+```bash
 bash bin/analyze.sh 2>&1 | tee analyze.log
 python bin/plot_results.py --analise-dir results/2I9T-daidzeina/analise --titulo "2I9T + Daidzeina"
 python bin/gerar_artigo_md.py --analise-dir results/2I9T-daidzeina/analise \
     --mmgbsa-dir results/2I9T-daidzeina/mmgbsa --out docs/artigo_md.md
 ```
-
-Cada etapa e retomavel: no Nextflow, `-resume` reaproveita o cache de tasks ja
-concluidas; no `bin/run_md.sh`, o script checa se o arquivo de output final de
-cada etapa ja existe antes de rodar de novo.
-
-Se `gh auth login` nao estiver configurado, o `git push` acima usa o Git
-Credential Manager do Windows (deve abrir o navegador pra autenticar) — o
-repositorio `github.com/eulaliobqi/tatiane-MD` ja existe e esta vazio,
-confirmado via `git ls-remote` antes de eu configurar o remote localmente.
 
 ## Depois que a simulacao terminar (pedidos feitos durante o preparo)
 
