@@ -5,8 +5,11 @@ process TOPOLOGY {
     publishDir { "${params.outdir}/${meta.id}/topo" }, mode: 'copy'
 
     input:
-    tuple val(meta), path(complexo_pdb), path(unl_itp), path(unl_prm),
-                     path(posre_unl_itp), path(unl_ini_gro)
+    tuple val(meta), path(complexo_pdb),
+                     path(unl_itp,        stageAs: 'lig_in/unl.itp'),
+                     path(unl_prm,        stageAs: 'lig_in/unl.prm'),
+                     path(posre_unl_itp,  stageAs: 'lig_in/posre_UNL.itp'),
+                     path(unl_ini_gro,    stageAs: 'lig_in/unl_ini.gro')
 
     output:
     tuple val(meta), path("complexo.gro"), path("topol.top"), path("*.itp"), path("*.prm"),
@@ -58,9 +61,16 @@ process TOPOLOGY {
         echo "ERRO: merge_small_molecule_topology.py falhou"; exit 1
     fi
 
-    # posre_unl_itp ja esta no cwd (staged pelo Nextflow como input declarado) —
-    # nao precisa copiar; um `cp` pra si mesmo aqui gerava erro espurio
-    # ("are the same file"), pego rodando de verdade no servidor
+    # Copia os arquivos do ligante do subdiretorio de staging (lig_in/) para o
+    # cwd — o Nextflow EXCLUI arquivos de input do casamento de glob de output
+    # por padrao ("input files are not included in the default matching set"),
+    # entao path("*.itp")/path("*.prm") nao enxergariam unl.itp/unl.prm/
+    # posre_UNL.itp se eles ficassem só no local onde foram staged como input.
+    # Pego rodando de verdade no servidor (Missing output file(s) `*.prm`).
+    cp lig_in/unl.itp .
+    cp lig_in/unl.prm .
+    cp lig_in/posre_UNL.itp .
+
     NTOTAL=\$(awk 'NR==2{print \$1}' complexo.gro)
     echo "[OK] TOPOLOGY concluido: complexo.gro com \${NTOTAL} atomos" >&2
     """
