@@ -1,6 +1,14 @@
-# Saidas regeneraveis do pipeline (recriadas por bin/run_md.sh e bin/analyze.sh)
+# Saidas regeneraveis do pipeline (recriadas por bin/run_md.sh e bin/analyze.sh
+# ou pelo Nextflow)
 results/
 work/
+
+# Artefatos de execucao do Nextflow
+.nextflow/
+.nextflow.log*
+pipeline_report.html
+timeline.html
+dag.svg
 
 # Trajetorias/checkpoints grandes (nunca commitar binarios de MD)
 *.xtc

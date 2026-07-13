@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Gera docs/artigo_md.md a partir dos resultados de results/2I9T-daidzeina/10_analysis/*.xvg
-Mirror do formato usado em MD-gromacs/artigo_md.md (Resumo / Introducao / Metodologia /
-Resultados e Discussao), adaptado para um unico par receptor-ligante (nao uma serie).
+Gera artigo_md.md a partir dos resultados de uma pasta de analise (.xvg) e,
+opcionalmente, de uma pasta de MM-GBSA (FINAL_RESULTS_MMGBSA.dat).
+Mirror do formato usado em MD-gromacs/artigo_md.md (Resumo / Introducao /
+Metodologia / Resultados e Discussao), adaptado para um unico par
+receptor-ligante (nao uma serie).
 
-IMPORTANTE: a secao "Convergencia com a literatura e outros projetos" e deixada como
-checklist TODO — nao preenche comparacoes com a literatura automaticamente (ver skill
-auditing-academic-sources: nenhum numero de artigo de terceiros deve ser citado sem
-verificacao explicita via busca).
+IMPORTANTE: a secao "Convergencia com a literatura e outros projetos" e deixada
+como checklist TODO — nao preenche comparacoes com a literatura automaticamente
+(ver skill auditing-academic-sources: nenhum numero de artigo de terceiros deve
+ser citado sem verificacao explicita via busca).
 
-Uso (depois que bin/run_md.sh e bin/analyze.sh tiverem rodado):
-    python bin/gerar_artigo_md.py
+Uso:
+    python bin/gerar_artigo_md.py \\
+        --analise-dir results/2I9T-daidzeina/analise \\
+        --mmgbsa-dir  results/2I9T-daidzeina/mmgbsa \\
+        --out         docs/artigo_md.md
 """
+import argparse
+import re
 import statistics
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-ANALYSIS_DIR = ROOT / "results" / "2I9T-daidzeina" / "10_analysis"
-OUT_MD = ROOT / "docs" / "artigo_md.md"
 
 
 def read_xvg(path):
@@ -48,48 +51,56 @@ def mean_sd(values):
 
 def fmt(mean, sd, unit="", nd=3):
     if mean is None:
-        return "N/D (rodar bin/analyze.sh)"
+        return "N/D (rodar as analises)"
     return f"{mean:.{nd}f} ± {sd:.{nd}f} {unit}".strip()
 
 
-def summarize(filename, col=1):
-    rows = read_xvg(ANALYSIS_DIR / filename)
+def summarize(analise_dir, filename, col=1):
+    rows = read_xvg(analise_dir / filename)
     if not rows:
         return None, None
     values = [r[col] for r in rows if len(r) > col]
     return mean_sd(values)
 
 
-def last_value(filename, col=1):
-    rows = read_xvg(ANALYSIS_DIR / filename)
-    if not rows:
+def read_mmgbsa_total(mmgbsa_dir):
+    """Extrai DELTA TOTAL (kcal/mol) do FINAL_RESULTS_MMGBSA.dat, se existir e valido."""
+    if mmgbsa_dir is None:
         return None
-    return rows[-1][col] if len(rows[-1]) > col else None
-
-
-def count_events_above(filename, threshold, col=1):
-    """Conta quantos frames tem valor > threshold (ex.: quebras de contato)."""
-    rows = read_xvg(ANALYSIS_DIR / filename)
-    if not rows:
+    dat = mmgbsa_dir / "FINAL_RESULTS_MMGBSA.dat"
+    if not dat.exists():
         return None
-    return sum(1 for r in rows if len(r) > col and r[col] > threshold)
+    text = dat.read_text(errors="ignore")
+    if "No results" in text or "failed" in text.lower():
+        return None
+    # Formato tipico do gmx_MMPBSA: bloco "DELTA TOTAL" com media/desvio
+    m = re.search(r"DELTA TOTAL\s+(-?\d+\.?\d*)\s+(\d+\.?\d*)", text)
+    if m:
+        return float(m.group(1)), float(m.group(2))
+    return None
 
 
-def build_report():
-    rmsd_rec_mean, rmsd_rec_sd = summarize("rmsd_backbone.xvg")
-    rmsd_lig_mean, rmsd_lig_sd = summarize("rmsd_ligante.xvg")
-    rg_mean, rg_sd = summarize("gyrate.xvg")
-    contacts_mean, contacts_sd = summarize("numcont_receptor_ligante.xvg")
-    hbond_mean, hbond_sd = summarize("hbond.xvg")
-    sasa_rec_mean, sasa_rec_sd = summarize("sasa_receptor.xvg")
-    sasa_lig_mean, sasa_lig_sd = summarize("sasa_ligante.xvg")
-    arg30_mean, arg30_sd = summarize("dist_arg30.xvg")
-    glu279_mean, glu279_sd = summarize("dist_glu279.xvg")
+def build_report(analise_dir, mmgbsa_dir, time_ns):
+    rmsd_rec_mean, rmsd_rec_sd = summarize(analise_dir, "rmsd_backbone.xvg")
+    rmsd_lig_mean, rmsd_lig_sd = summarize(analise_dir, "rmsd_ligante.xvg")
+    rg_mean, rg_sd = summarize(analise_dir, "gyrate.xvg")
+    contacts_mean, contacts_sd = summarize(analise_dir, "numcont_receptor_ligante.xvg")
+    hbond_mean, hbond_sd = summarize(analise_dir, "hbond.xvg")
+    sasa_rec_mean, sasa_rec_sd = summarize(analise_dir, "sasa_receptor.xvg")
+    sasa_lig_mean, sasa_lig_sd = summarize(analise_dir, "sasa_ligante.xvg")
+    arg30_mean, arg30_sd = summarize(analise_dir, "dist_arg30.xvg")
+    glu279_mean, glu279_sd = summarize(analise_dir, "dist_glu279.xvg")
+    mmgbsa = read_mmgbsa_total(mmgbsa_dir)
 
     has_results = rmsd_rec_mean is not None
 
     arg30_nm = f"{arg30_mean*10:.2f}" if arg30_mean is not None else "N/D"
     glu279_nm = f"{glu279_mean*10:.2f}" if glu279_mean is not None else "N/D"
+    mmgbsa_line = (f"{mmgbsa[0]:.2f} ± {mmgbsa[1]:.2f} kcal/mol"
+                   if mmgbsa is not None else
+                   "N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar "
+                   "como opcional, ja falhou de forma irreconciliavel em outro "
+                   "projeto deste laboratorio, ver Milena-MD)")
 
     md = f"""# Dinamica Molecular — Receptor 2I9T (NF-kB) + Daidzeina — Secoes do Artigo
 
@@ -98,12 +109,12 @@ def build_report():
 
 ## Resumo
 
-Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do complexo entre
+Este trabalho investigou por dinamica molecular ({time_ns} ns) a estabilidade do complexo entre
 o dominio de ligacao a DNA do fator de transcricao NF-kB (PDB 2I9T, cadeia A, res. 17-291)
 e a isoflavona daidzeina, um candidato a inibidor natural identificado por triagem virtual
 (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). {"Resultados preliminares indicam RMSD do backbone de " + fmt(rmsd_rec_mean, rmsd_rec_sd, "nm") + " e " + f"{contacts_mean:.0f}" + " contatos receptor-ligante em media." if has_results else "Simulacao ainda nao executada — secao a preencher apos `bin/run_md.sh` + `bin/analyze.sh`."}
+fisiologicas humanas). {"Resultados preliminares indicam RMSD do backbone de " + fmt(rmsd_rec_mean, rmsd_rec_sd, "nm") + " e " + f"{contacts_mean:.0f}" + " contatos receptor-ligante em media." if has_results else "Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar."}
 
 ## 1. Introducao
 
@@ -158,7 +169,7 @@ Lepidoptera deste laboratorio).
    com restricoes de posicao no receptor (`POSRES`, gerado por `pdb2gmx`) e no ligante
    (`POSRES_UNL`, gerado por `gmx genrestr`).
 3. **NPT (500 ps)** — 300 K / 1 bar, barostato de Berendsen (τ = 2,0 ps), restricoes mantidas.
-4. **Producao (100 ns)** — sem restricoes, barostato de Parrinello-Rahman (Parrinello &
+4. **Producao ({time_ns} ns)** — sem restricoes, barostato de Parrinello-Rahman (Parrinello &
    Rahman, 1981; τ = 2,0 ps), integrador *leap-frog* (dt = 2 fs), ligacoes com hidrogenio
    restringidas por LINCS (Hess *et al.*, 1997), eletrostatica de longo alcance por PME
    (Darden *et al.*, 1993, `rcoulomb = 1,2 nm`).
@@ -170,6 +181,18 @@ receptor-ligante (< 0,4 nm), pontes de hidrogenio, SASA do receptor e do ligante
 distancia minima entre o ligante e os dois residuos de interesse identificados no
 docking (Arg30, Glu279), todas calculadas com ferramentas nativas do GROMACS sobre a
 trajetoria pos-processada (`-pbc mol -center` + `-fit rot+trans`).
+
+### 2.5 Energia livre de ligacao (MM-GBSA)
+
+A energia livre de ligacao foi estimada por MM-GBSA (`gmx_MMPBSA`, protocolo de
+trajetoria unica, `igb=2`, decomposicao por residuo habilitada) sobre os frames da
+producao pos-equilibracao. **Nota metodologica:** esta mesma ferramenta falhou de
+forma irreconciliavel em outro projeto deste laboratorio (Milena-MD, serie
+trypsin×GORE12T) apos 3 tentativas de correcao; o modulo aqui foi reescrito do zero
+evitando o erro de linha de comando identificado retroativamente (flags `-cs/-ct/-ci`
+sem valor, causando deteccao falsa de "argumentos duplicados"). Tratar resultados de
+MM-GBSA como suplementares — se a etapa falhar, o restante do pipeline (RMSD/RMSF/
+contatos/H-bonds/SASA) permanece valido e completo.
 
 ## 3. Resultados e Discussao
 
@@ -192,9 +215,13 @@ trajetoria pos-processada (`-pbc mol -center` + `-fit rot+trans`).
 | Arg30 | 4,7-4,8 Å | Hidrofobica | {arg30_nm} Å |
 | Glu279 | 1,9 Å | Hidrogenio | {glu279_nm} Å |
 
-{"*(resultados ainda nao gerados — rodar `bin/run_md.sh` seguido de `bin/analyze.sh`)*" if not has_results else ""}
+### 3.3 Energia livre de ligacao (MM-GBSA)
 
-### 3.3 Convergencia com a literatura e outros projetos do laboratorio — TODO
+ΔG total: **{mmgbsa_line}**
+
+{"*(resultados ainda nao gerados — rodar o pipeline Nextflow completo)*" if not has_results else ""}
+
+### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
 
 Pendente, a preencher **apos** a producao terminar e as analises rodarem (nao
 fabricar numeros de terceiros aqui — buscar e citar explicitamente):
@@ -203,12 +230,12 @@ fabricar numeros de terceiros aqui — buscar e citar explicitamente):
       NF-kB em MD (buscar literatura especifica antes de citar valores).
 - [ ] Buscar na literatura estudos computacionais ou experimentais de
       daidzeina/isoflavonas ligando NF-kB (ou alvos RHD homologos) e comparar
-      modo de ligacao / residuos-chave.
+      modo de ligacao / residuos-chave / valores de ΔG de ligacao.
 - [ ] Comparar robustez metodologica (protocolo de equilibracao, cutoffs, forca de
       POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
       (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —
       ver `~/.claude/.claude/agents/bioinformatics.md`.
-- [ ] Avaliar se a persistencia de Arg30/Glu279 ao longo dos 100 ns confirma ou
+- [ ] Avaliar se a persistencia de Arg30/Glu279 ao longo da producao confirma ou
       refuta a pose de docking original (criterio sugerido: manter contato em
       >50% dos frames pos-equilibracao).
 - [ ] Dado o param penalty=53 do CGenFF (acima do limiar de 50), considerar
@@ -223,12 +250,22 @@ antes de qualquer uso em documento final.*
 
 
 def main():
-    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
-    OUT_MD.write_text(build_report(), encoding="utf-8")
-    print(f"[OK] Relatorio gerado em {OUT_MD}")
-    if not (ANALYSIS_DIR / "rmsd_backbone.xvg").exists():
-        print("[AVISO] Nenhum resultado de analise encontrado ainda — "
-              "rode bin/run_md.sh e bin/analyze.sh antes para preencher os numeros.")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--analise-dir", required=True)
+    ap.add_argument("--mmgbsa-dir", default=None)
+    ap.add_argument("--time-ns", type=int, default=100)
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+
+    analise_dir = Path(args.analise_dir)
+    mmgbsa_dir = Path(args.mmgbsa_dir) if args.mmgbsa_dir else None
+    out_path = Path(args.out)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(build_report(analise_dir, mmgbsa_dir, args.time_ns), encoding="utf-8")
+    print(f"[OK] Relatorio gerado em {out_path}")
+    if not (analise_dir / "rmsd_backbone.xvg").exists():
+        print(f"[AVISO] Nenhum resultado de analise encontrado em {analise_dir} ainda.")
 
 
 if __name__ == "__main__":

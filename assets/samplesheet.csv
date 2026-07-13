@@ -1,0 +1,2 @@
+sample_id,receptor,ligand_mol2,ligand_str
+2I9T-daidzeina,inputs/receptor-2I9T-original.pdb,inputs/ligand-UNL.cgenff.mol2,inputs/ligand-UNL.str
