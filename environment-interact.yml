@@ -1,0 +1,32 @@
+# Ambiente Conda separado para analises de interacao pos-MD (mapa de
+# contatos, fingerprint ProLIF) -- mesma justificativa do plot-env-tatiana:
+# nunca instalar isso no md-gromacs (env grande, GROMACS CUDA + AmberTools),
+# risco de corrupcao silenciosa ja documentado no projeto irmao Milena-MD.
+#
+# Nome proprio deste projeto (nao reusa o interact-env do Milena-MD) --
+# projetos de execucao ficam isolados, so memoria/agentes/skills sao
+# compartilhados entre projetos.
+#
+# Criacao:
+#   mamba env create -f environment-interact.yml
+#
+# Verificacao:
+#   mamba run -n interact-env-tatiana python -c "import MDAnalysis, prolif, rdkit"
+
+name: interact-env-tatiana
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - mdanalysis>=2.0
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - seaborn
+  - pip
+  - pip:
+    - prolif
+    - rdkit
