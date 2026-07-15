@@ -180,11 +180,21 @@ workflow {
 
     // CONTACT_MAP/PROLIF_FINGERPRINT precisam do complexo.pdb original (nao
     // do .tpr/.gro) — mesmo motivo do Milena-MD: deteccao de cadeia B usa
-    // leitura direta do PDB. complexo.pdb NAO e' por fase (join 1:N por
-    // meta.id — cada fase recebe o mesmo complexo.pdb).
+    // leitura direta do PDB. complexo.pdb NAO e' por fase — broadcast do
+    // MESMO valor pras 2 linhas de fase.
+    //
+    // NAO usar .join() aqui: join() pareia 1:1 e CONSOME o item do lado
+    // direito -- com 2 linhas do lado esquerdo (bound/relocated) com a
+    // MESMA chave (meta.id) contra 1 unico item de complexo.pdb, apenas a
+    // PRIMEIRA linha a chegar casa; a segunda fica sem par e e' descartada
+    // silenciosamente (confirmado em producao 2026-07-14: CONTACT_MAP/
+    // PROLIF_FINGERPRINT/FE_RERUN/FE_INTERPRET rodaram so "1 of 1" em vez
+    // de "2 of 2", cada um pegando uma fase diferente por corrida de
+    // conclusao das tasks upstream). .combine(by:0) faz o produto
+    // cartesiano correto por chave (2 esquerda x 1 direita = 2 saidas).
     ch_interact_input = ch_phase_all
         .map { meta, tpr, xtc, ndx -> tuple(meta.id, meta, tpr, xtc) }
-        .join(
+        .combine(
             PREPARE_COMPLEX.out.complexo.map { meta, complex_pdb -> tuple(meta.id, complex_pdb) },
             by: 0
         )
@@ -196,15 +206,15 @@ workflow {
     // FE_RERUN precisa da topologia pos-solvatacao (BOX_SOLVATE_IONS, NAO
     // TOPOLOGY — mesma regra nao-negociavel do MMGBSA) + estrutura final da
     // producao (PRODUCTION.out.checkpoint) + subtrajetoria reduzida de
-    // CLUSTERING. Nem PRODUCTION nem BOX_SOLVATE_IONS sao por fase — join
-    // 1:N por meta.id, cada fase recebe a mesma topologia/gro.
+    // CLUSTERING. Nem PRODUCTION nem BOX_SOLVATE_IONS sao por fase —
+    // mesmo motivo acima, .combine(by:0) em vez de .join(by:0).
     ch_fe_input = CLUSTERING.out.for_fe
         .map { meta, tpr, xtc, ndx -> tuple(meta.id, meta, xtc, ndx) }
-        .join(
+        .combine(
             PRODUCTION.out.checkpoint.map { meta, gro, cpt, edr -> tuple(meta.id, gro) },
             by: 0
         )
-        .join(
+        .combine(
             BOX_SOLVATE_IONS.out.system
                 .map { meta, gro, top, itps, prms -> tuple(meta.id, top, itps) },
             by: 0
