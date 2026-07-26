@@ -54,7 +54,15 @@ def process(infile, outfile):
     key_names = {}
     for line in lines:
         key = (line[21], line[22:26])  # (chainID, resSeq)
-        resname = line[17:20].strip()
+        # Nomes de titulacao CHARMM de 4 letras (ASPP/GLUP) nao cabem no campo
+        # padrao de 3 colunas (18-20) — o PDB2PQR os escreve "emprestando" a
+        # coluna de altLoc (17), sempre alinhados a direita ate a col.20.
+        # Janela de 4 colunas [16:20) cobre os dois casos (extra espaco a
+        # esquerda e removido pelo strip() quando o nome tem so 3 letras).
+        # Descoberto rodando de verdade pro 6FWC (GLU437 protonado pelo
+        # PROPKA vira GLUP, que sem esse fix e' lido como "LUP" e derruba o
+        # pdb2gmx com "residue LUP437 is of type 'Other'").
+        resname = line[16:20].strip()
         key_names.setdefault(key, set()).add(resname)
 
     fixes = {}
@@ -78,15 +86,15 @@ def process(infile, outfile):
     with open(outfile, 'w') as out:
         for line in lines:
             key = (line[21], line[22:26])
-            resname = line[17:20].strip()
+            resname = line[16:20].strip()
 
             if resname == 'TER' and key in fixes:
                 resname = fixes[key]
-                line = line[:17] + f'{resname:<3s}' + line[20:]
+                line = line[:16] + f'{resname:>4s}' + line[20:]
 
             new_name = RENAME.get(resname, resname)
             if new_name != resname:
-                line = line[:17] + f'{new_name:<3s}' + line[20:]
+                line = line[:16] + f'{new_name:>4s}' + line[20:]
                 renamed += 1
                 print(f"  Renomeado: {resname} -> {new_name} (res {line[22:26].strip()})")
             kept += 1
