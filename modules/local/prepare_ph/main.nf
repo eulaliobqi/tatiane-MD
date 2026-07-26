@@ -9,6 +9,7 @@ process PREPARE_PH {
 
     output:
     tuple val(meta), path("receptor_ph.pdb"), emit: protonated
+    tuple val(meta), path("receptor_ph.pdb.protonated.txt"), emit: protonated_asp_glu
     tuple val(meta), path("*.propka"), optional: true, emit: propka
 
     script:

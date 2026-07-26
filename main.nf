@@ -93,8 +93,15 @@ workflow {
                 .map { meta, itp, prm, posre, ini_pdb, ini_gro -> tuple(meta.id, itp, prm, posre, ini_gro) },
             by: 0
         )
-        .map { id, meta, complex_pdb, itp, prm, posre, ini_gro ->
-            tuple(meta, complex_pdb, itp, prm, posre, ini_gro)
+        .join(
+            // Lista de residuos Asp/Glu protonados pelo PROPKA (chain+resSeq
+            // preservados de PREPARE_PH ate aqui) -- TOPOLOGY usa pra montar
+            // as respostas do prompt interativo `pdb2gmx -asp -glu`.
+            PREPARE_PH.out.protonated_asp_glu.map { meta, prot_txt -> tuple(meta.id, prot_txt) },
+            by: 0
+        )
+        .map { id, meta, complex_pdb, itp, prm, posre, ini_gro, prot_txt ->
+            tuple(meta, complex_pdb, itp, prm, posre, ini_gro, prot_txt)
         }
 
     TOPOLOGY(ch_topology_input)

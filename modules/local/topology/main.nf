@@ -9,7 +9,8 @@ process TOPOLOGY {
                      path(unl_itp,        stageAs: 'lig_in/unl.itp'),
                      path(unl_prm,        stageAs: 'lig_in/unl.prm'),
                      path(posre_unl_itp,  stageAs: 'lig_in/posre_UNL.itp'),
-                     path(unl_ini_gro,    stageAs: 'lig_in/unl_ini.gro')
+                     path(unl_ini_gro,    stageAs: 'lig_in/unl_ini.gro'),
+                     path(protonated_txt)
 
     output:
     tuple val(meta), path("complexo.gro"), path("topol.top"), path("*.itp"), path("*.prm"),
@@ -33,6 +34,22 @@ process TOPOLOGY {
     # numericos do prompt -ter diferem entre AMBER e CHARMM, nao reusar o
     # "printf '0\\n0\\n'" do pipeline BEN/AMBER aqui.
     # -ignh e redundante (receptor ja sem H apos pdb2pqr) mas mantido por seguranca.
+    #
+    # -asp -glu: gmx pdb2gmx NAO consegue ler resname CHARMM de 4 letras
+    # (ASPP/GLUP) do PDB em nenhuma posicao de coluna (confirmado rodando de
+    # verdade — sempre trunca pra 3 letras, "GLUP"->"LUP", erro fatal). A
+    # protonacao de Asp/Glu determinada pelo PROPKA (bin/pdb2pqr_process_charmm.py
+    # ja reverteu pro nome padrao ASP/GLU no receptor.pdb e listou os residuos
+    # protonados em protonated_txt) e passada aqui via prompt interativo 0/1
+    # por residuo — pdb2gmx pergunta TODOS os ASP primeiro (ordem do arquivo),
+    # depois TODOS os GLU (ordem do arquivo), NAO misturado/sequencial;
+    # bin/build_asp_glu_answers.py gera as respostas nessa mesma ordem
+    # (confirmado rodando de verdade — resposta na ordem errada cai no
+    # residuo errado silenciosamente, sem erro fatal).
+    python3 ${projectDir}/bin/build_asp_glu_answers.py receptor.pdb ${protonated_txt} > asp_glu_answers.txt
+    N_ASP_GLU=\$(wc -l < asp_glu_answers.txt)
+    echo "  \${N_ASP_GLU} residuo(s) Asp/Glu (respostas de titulacao): \$(tr '\\n' ' ' < asp_glu_answers.txt)" >&2
+
     ${params.gmx_cmd} pdb2gmx \\
         -f receptor.pdb \\
         -o receptor.gro \\
@@ -40,7 +57,8 @@ process TOPOLOGY {
         -i posre.itp \\
         -ff charmm36-feb2026_cgenff-5.0 \\
         -water tip3p \\
-        -ignh \\
+        -ignh -asp -glu \\
+        < asp_glu_answers.txt \\
         2>&1 | tee pdb2gmx.log
 
     if [ ! -s receptor.gro ]; then
