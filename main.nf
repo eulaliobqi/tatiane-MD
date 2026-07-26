@@ -45,7 +45,10 @@ workflow {
         .fromPath(params.input, checkIfExists: true)
         .splitCsv(header: true, strip: true)
         .map { row ->
-            def meta     = [id: row.sample_id]
+            def meta     = [id: row.sample_id, key_residues: row.key_residues,
+                             run_extra_analyses: (row.run_extra_analyses ?: 'false'),
+                             target_name: row.target_name, organism: row.organism,
+                             ligand_name: row.ligand_name, pdb_id: row.pdb_id]
             def receptor = file(row.receptor, checkIfExists: true)
             tuple(meta, receptor)
         }
@@ -156,6 +159,12 @@ workflow {
 
     // PHASE_SPLIT reusa tpr/xtc de POSTPROCESS + lig.ndx de ANALYSES —
     // mesma entrada que MMGBSA ja usa.
+    //
+    // Gate por meta.run_extra_analyses (coluna do samplesheet): os 6 modulos
+    // extra (PHASE_SPLIT...FE_INTERPRET) foram construidos sob medida pro
+    // achado real do 2I9T (limites de fase 60/65ns dessa corrida especifica,
+    // ver phase_split/main.nf) — nao rodar cegamente pros sistemas novos
+    // sem evidencia previa de transicao de fase equivalente.
     ch_phase_split_input = POSTPROCESS.out.fit
         .map { meta, tpr, xtc -> tuple(meta.id, meta, tpr, xtc) }
         .join(
@@ -163,6 +172,7 @@ workflow {
             by: 0
         )
         .map { id, meta, tpr, xtc, ndx -> tuple(meta, tpr, xtc, ndx) }
+        .filter { meta, tpr, xtc, ndx -> meta.run_extra_analyses?.toString() == 'true' }
 
     PHASE_SPLIT(ch_phase_split_input)
 
@@ -235,8 +245,12 @@ workflow {
     ch_plot_input = ANALYSES.out.xvg
         .map { meta, xvgs, ndx -> tuple(meta.id, meta, xvgs) }
         .join(
+            // dist_*.xvg/sasa_*.xvg sao globs de N arquivos (N = numero de
+            // residuos-chave do sistema, variavel) — Nextflow emite Path
+            // unico ou List conforme o numero de casamentos; flatten()
+            // normaliza os dois casos antes de repassar pro PLOT/REPORT.
             ANALYSES_RESIDUES.out.residues
-                .map { meta, d1, d2, s1, s2 -> tuple(meta.id, [d1, d2, s1, s2]) },
+                .map { meta, dist_files, sasa_files -> tuple(meta.id, [dist_files, sasa_files].flatten()) },
             by: 0
         )
         .map { id, meta, xvgs, res_files -> tuple(meta, xvgs, res_files) }

@@ -1,2 +1,5 @@
-sample_id,receptor,ligand_mol2,ligand_str
-2I9T-daidzeina,inputs/receptor-2I9T-original.pdb,inputs/ligand-UNL.cgenff.mol2,inputs/ligand-UNL.str
+sample_id,receptor,ligand_mol2,ligand_str,key_residues,run_extra_analyses,target_name,organism,ligand_name,pdb_id
+2I9T-daidzeina,inputs/receptor-2I9T-original.pdb,inputs/ligand-UNL.cgenff.mol2,inputs/ligand-UNL.str,30:ARG:4.7-4.8:Hidrofobica;279:GLU:1.9:Hidrogenio,true,NF-kB (dominio de ligacao a DNA p65/p50),Mus musculus,Daidzeina,2I9T
+4R3C-liquiritigenina,inputs/receptor-4R3C-original.pdb,inputs/ligand-UNL-4r3c.cgenff.mol2,inputs/ligand-UNL-4r3c.str,109:MET:1.9:Hidrogenio;106:THR:3.8:Hidrofobica;167:LEU:3.7:Hidrofobica,false,p38 alfa MAPK,Homo sapiens,Liquiritigenina,4R3C
+6FWC-formononetina,inputs/receptor-6FWC-original.pdb,inputs/ligand-UNL-6fwc.cgenff.mol2,inputs/ligand-UNL-6fwc.str,199:ILE:3.7:Hidrofobica;398:TYR:3.9:Hidrofobica;326:TYR:4.6:Hidrofobica;435:TYR:4.4:Hidrofobica;172:CYS:4.8:Hidrofobica,false,Monoamina oxidase B (MAO-B),Homo sapiens,Formononetina,6FWC
+7K2S-biochaninaA,inputs/receptor-7K2S-original.pdb,inputs/ligand-UNL-7k2s.cgenff.mol2,inputs/ligand-UNL-7k2s.str,470:ARG:4.4-4.8:Hidrofobica,false,Keap1 (dominio Kelch),Homo sapiens,Biochanina A,7K2S

@@ -59,10 +59,18 @@ PANELS = [
     ("gyrate.xvg", "Raio de giro (receptor)", "Tempo (ns)", "Rg (nm)"),
     ("numcont_receptor_ligante.xvg", "Contatos receptor-ligante (<0,4nm)", "Tempo (ns)", "N contatos"),
     ("hbond.xvg", "Pontes de H receptor-ligante", "Tempo (ns)", "N pontes H"),
-    ("dist_arg30.xvg", "Dist. minima Ligante-Arg30 (docking: 4,7-4,8 A)", "Tempo (ns)", "Dist. (nm)"),
-    ("dist_glu279.xvg", "Dist. minima Ligante-Glu279 (docking: 1,9 A)", "Tempo (ns)", "Dist. (nm)"),
     ("sasa_ligante.xvg", "SASA ligante", "Tempo (ns)", "SASA (nm2)"),
 ]
+
+
+def discover_residue_panels(analise_dir):
+    """Um painel por dist_<Residuo>.xvg encontrado (numero de residuos-chave
+    varia por sistema — ver meta.key_residues/ANALYSES_RESIDUES)."""
+    panels = []
+    for f in sorted(analise_dir.glob("dist_*.xvg")):
+        label = f.stem.replace("dist_", "")
+        panels.append((f.name, f"Dist. minima Ligante-{label}", "Tempo (ns)", "Dist. (nm)"))
+    return panels
 
 
 def main():
@@ -76,11 +84,16 @@ def main():
     analise_dir = Path(args.analise_dir)
     out_png = Path(args.out) if args.out else analise_dir / "painel_resumo.png"
 
-    fig, axes = plt.subplots(4, 2, figsize=(12, 14))
+    panels = PANELS + discover_residue_panels(analise_dir)
+    ncols = 2
+    nrows = -(-len(panels) // ncols)  # ceil
+    fig, axes = plt.subplots(nrows, ncols, figsize=(12, 3.5 * nrows))
     axes = axes.flatten()
+    for ax in axes[len(panels):]:
+        ax.axis("off")
 
     any_data = False
-    for ax, (fname, title, xlabel, ylabel) in zip(axes, PANELS):
+    for ax, (fname, title, xlabel, ylabel) in zip(axes, panels):
         x, y = read_xvg(analise_dir / fname)
         if x:
             any_data = True

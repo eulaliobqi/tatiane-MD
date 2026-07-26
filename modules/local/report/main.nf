@@ -9,7 +9,7 @@ process REPORT {
     label 'process_low'
 
     publishDir { "${params.outdir}/${meta.id}" }, mode: 'copy'
-    publishDir "${projectDir}/docs", mode: 'copy', pattern: 'artigo_md.md'
+    publishDir { "${projectDir}/docs/${meta.id}" }, mode: 'copy', pattern: 'artigo_md.md'
 
     input:
     tuple val(meta), path(xvgs), path(residue_xvgs)
@@ -24,8 +24,13 @@ process REPORT {
 
     python3 ${projectDir}/bin/gerar_artigo_md.py \\
         --analise-dir analise_dir \\
-        --mmgbsa-dir  ${params.outdir}/${meta.id}/mmgbsa \\
-        --time-ns     ${params.time_ns} \\
-        --out         artigo_md.md
+        --mmgbsa-dir   ${params.outdir}/${meta.id}/mmgbsa \\
+        --time-ns      ${params.time_ns} \\
+        --target-name  "${meta.target_name ?: meta.id}" \\
+        --pdb-id       "${meta.pdb_id ?: ''}" \\
+        --organism     "${meta.organism ?: ''}" \\
+        --ligand-name  "${meta.ligand_name ?: 'ligante'}" \\
+        --key-residues "${meta.key_residues ?: ''}" \\
+        --out          artigo_md.md
     """
 }

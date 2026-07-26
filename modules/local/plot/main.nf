@@ -17,7 +17,7 @@ process PLOT {
 
     python3 ${projectDir}/bin/plot_results.py \\
         --analise-dir analise_dir \\
-        --titulo "2I9T (NF-kB) + Daidzeina — resumo da dinamica molecular" \\
+        --titulo "${meta.target_name ?: meta.id} + ${meta.ligand_name ?: 'ligante'} — resumo da dinamica molecular" \\
         --window-ns ${params.window_ns} \\
         --out painel_resumo.png
     """

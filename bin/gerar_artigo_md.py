@@ -5,7 +5,9 @@ Gera artigo_md.md a partir dos resultados de uma pasta de analise (.xvg) e,
 opcionalmente, de uma pasta de MM-GBSA (FINAL_RESULTS_MMGBSA.dat).
 Mirror do formato usado em MD-gromacs/artigo_md.md (Resumo / Introducao /
 Metodologia / Resultados e Discussao), adaptado para um unico par
-receptor-ligante (nao uma serie).
+receptor-ligante (nao uma serie). Generico por sistema — nome do alvo, PDB
+ID, organismo, ligante e residuos-chave sao parametros de linha de comando,
+nao fabricados/assumidos aqui.
 
 IMPORTANTE: a secao "Convergencia com a literatura e outros projetos" e deixada
 como checklist TODO — nao preenche comparacoes com a literatura automaticamente
@@ -16,7 +18,10 @@ Uso:
     python bin/gerar_artigo_md.py \\
         --analise-dir results/2I9T-daidzeina/analise \\
         --mmgbsa-dir  results/2I9T-daidzeina/mmgbsa \\
-        --out         docs/artigo_md.md
+        --target-name "NF-kB (dominio de ligacao a DNA)" --pdb-id 2I9T \\
+        --organism "Mus musculus" --ligand-name Daidzeina \\
+        --key-residues "30:ARG:4.7-4.8:Hidrofobica;279:GLU:1.9:Hidrogenio" \\
+        --out docs/2I9T-daidzeina/artigo_md.md
 """
 import argparse
 import re
@@ -63,6 +68,20 @@ def summarize(analise_dir, filename, col=1):
     return mean_sd(values)
 
 
+def parse_key_residues(spec):
+    """'resid:resname:dockdist:doctype;...' -> lista de dicts com label (ex. Arg30)."""
+    entries = []
+    for chunk in (spec or "").split(";"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        resid, resname, dockdist, doctype = chunk.split(":")
+        label = f"{resname.lower().capitalize()}{resid}"
+        entries.append({"resid": resid, "resname": resname, "dockdist": dockdist,
+                         "doctype": doctype, "label": label})
+    return entries
+
+
 def read_mmgbsa_total(mmgbsa_dir):
     """Extrai DELTA TOTAL (kcal/mol) do FINAL_RESULTS_MMGBSA.dat, se existir e valido."""
     if mmgbsa_dir is None:
@@ -80,7 +99,8 @@ def read_mmgbsa_total(mmgbsa_dir):
     return None
 
 
-def build_report(analise_dir, mmgbsa_dir, time_ns):
+def build_report(analise_dir, mmgbsa_dir, time_ns, target_name, pdb_id, organism,
+                  ligand_name, key_residues):
     rmsd_rec_mean, rmsd_rec_sd = summarize(analise_dir, "rmsd_backbone.xvg")
     rmsd_lig_mean, rmsd_lig_sd = summarize(analise_dir, "rmsd_ligante.xvg")
     rg_mean, rg_sd = summarize(analise_dir, "gyrate.xvg")
@@ -88,21 +108,29 @@ def build_report(analise_dir, mmgbsa_dir, time_ns):
     hbond_mean, hbond_sd = summarize(analise_dir, "hbond.xvg")
     sasa_rec_mean, sasa_rec_sd = summarize(analise_dir, "sasa_receptor.xvg")
     sasa_lig_mean, sasa_lig_sd = summarize(analise_dir, "sasa_ligante.xvg")
-    arg30_mean, arg30_sd = summarize(analise_dir, "dist_arg30.xvg")
-    glu279_mean, glu279_sd = summarize(analise_dir, "dist_glu279.xvg")
     mmgbsa = read_mmgbsa_total(mmgbsa_dir)
 
     has_results = rmsd_rec_mean is not None
 
-    arg30_nm = f"{arg30_mean*10:.2f}" if arg30_mean is not None else "N/D"
-    glu279_nm = f"{glu279_mean*10:.2f}" if glu279_mean is not None else "N/D"
+    residue_entries = parse_key_residues(key_residues)
+    residue_rows = []
+    for r in residue_entries:
+        dmean, dsd = summarize(analise_dir, f"dist_{r['label']}.xvg")
+        dist_nm = f"{dmean*10:.2f}" if dmean is not None else "N/D"
+        residue_rows.append(f"| {r['label']} | {r['dockdist']} Å | {r['doctype']} | {dist_nm} Å |")
+    residue_table = "\n".join(residue_rows) if residue_rows else "| — | — | — | — |"
+    residue_names_txt = ", ".join(r["label"] for r in residue_entries) or "N/D"
+
+    pdb_line = f" (PDB {pdb_id})" if pdb_id else ""
+    organism_line = f", {organism}" if organism else ""
+
     mmgbsa_line = (f"{mmgbsa[0]:.2f} ± {mmgbsa[1]:.2f} kcal/mol"
                    if mmgbsa is not None else
                    "N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar "
                    "como opcional, ja falhou de forma irreconciliavel em outro "
                    "projeto deste laboratorio, ver Milena-MD)")
 
-    md = f"""# Dinamica Molecular — Receptor 2I9T (NF-kB) + Daidzeina — Secoes do Artigo
+    md = f"""# Dinamica Molecular — {target_name}{pdb_line} + {ligand_name} — Secoes do Artigo
 
 *Gerado automaticamente por `bin/gerar_artigo_md.py`. Revisar antes de usar em texto final
 (passar por /humanizer e pela skill auditing-academic-sources antes de qualquer submissao).*
@@ -110,43 +138,37 @@ def build_report(analise_dir, mmgbsa_dir, time_ns):
 ## Resumo
 
 Este trabalho investigou por dinamica molecular ({time_ns} ns) a estabilidade do complexo entre
-o dominio de ligacao a DNA do fator de transcricao NF-kB (PDB 2I9T, cadeia A, res. 17-291)
-e a isoflavona daidzeina, um candidato a inibidor natural identificado por triagem virtual
-(AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
+{target_name}{pdb_line}{organism_line} e {ligand_name}, um candidato identificado por triagem
+virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). {"Resultados preliminares indicam RMSD do backbone de " + fmt(rmsd_rec_mean, rmsd_rec_sd, "nm") + " e " + f"{contacts_mean:.0f}" + " contatos receptor-ligante em media." if has_results else "Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar."}
+fisiologicas humanas). {"Resultados preliminares indicam RMSD do backbone de " + fmt(rmsd_rec_mean, rmsd_rec_sd, "nm") + " e " + (f"{contacts_mean:.0f}" if contacts_mean is not None else "N/D") + " contatos receptor-ligante em media." if has_results else "Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar."}
 
 ## 1. Introducao
 
-NF-kB e um fator de transcricao central na resposta inflamatoria e imune, cuja ativacao
-aberrante esta implicada em cancer, doencas autoimunes e inflamacao cronica. O dominio Rel
-homology (RHD) de suas subunidades (p50/p65) medeia tanto a dimerizacao quanto a ligacao
-direta ao DNA, sendo um alvo estabelecido para o desenho de inibidores de pequenas
-moleculas que bloqueiam essa interacao. Isoflavonas de origem vegetal, como a daidzeina
-(*Glycine max*), tem sido reportadas na literatura como moduladoras da via NF-kB; este
-trabalho avalia computacionalmente, por dinamica molecular classica, a estabilidade
-temporal do complexo predito por docking entre a daidzeina e o RHD de NF-kB (PDB 2I9T).
+{target_name}{pdb_line}{organism_line} foi selecionado como alvo de triagem virtual para
+{ligand_name}, com a pose de docking (AutoDock Vina) avaliada quanto a estabilidade temporal
+por dinamica molecular classica. *(Secao a expandir com contexto biologico especifico do alvo
+e revisao da literatura sobre o ligante — ver checklist na secao 3.4; nenhuma afirmacao sobre
+relevancia biologica ou precedente na literatura deve ser incluida aqui sem verificacao
+explicita, ver skill auditing-academic-sources.)*
 
 ## 2. Metodologia
 
 ### 2.1 Preparacao do complexo
 
-A estrutura inicial do receptor foi obtida do PDB 2I9T (dominio de ligacao a DNA de NF-kB
-p65/p50, cadeia A, residuos 17-291), com os estados de protonacao dos residuos ionizaveis
-determinados para pH 7,4 (condicao fisiologica humana — nao o pH 8,2 usado nos demais
-pipelines deste laboratorio, especifico para midgut alcalino de Lepidoptera) via PROPKA,
-implementado por `pdb2pqr 3.7.1` com campo de forca CHARMM. A pose inicial da daidzeina
-(resname UNL) foi obtida por docking molecular com AutoDock Vina, com interacoes-chave
-identificadas por analise pos-docking em Arg30 (contato hidrofobico, ~4,7-4,8 Å) e
-Glu279 (ligacao de hidrogenio, ~1,9 Å).
+A estrutura inicial do receptor foi obtida do PDB {pdb_id or 'N/D'} (cadeia A), com os estados
+de protonacao dos residuos ionizaveis determinados para pH 7,4 (condicao fisiologica humana —
+nao o pH 8,2 usado nos demais pipelines deste laboratorio, especifico para midgut alcalino de
+Lepidoptera) via PROPKA, implementado por `pdb2pqr 3.7.1` com campo de forca CHARMM. A pose
+inicial do ligante (resname UNL) foi obtida por docking molecular com AutoDock Vina, com
+interacoes-chave identificadas por analise pos-docking em: {residue_names_txt}.
 
 A topologia do ligante foi gerada a partir do arquivo de parametros CGenFF 5.0 retornado
-pelo servidor ParamChem (penalidade de parametro = 53,0; penalidade de carga = 23,3 —
-acima do limiar de 50 que a propria CGenFF define como "requer validacao extensa";
-resultado tratado como preliminar ate validacao adicional, ex. otimizacao QM dos
-dihedros de maior penalidade), convertido para o formato GROMACS com
-`cgenff_charmm2gmx.py` (Lemkul Lab) e o port CHARMM36 de marco de 2019
-(E. P. Raman, J. A. Lemkul, R. Best, A. D. MacKerell Jr.).
+pelo servidor ParamChem (ver `inputs/ligand-UNL*.str` para as penalidades de parametro/carga
+especificas deste ligante — penalidades acima de 50 indicam analogia pobre e requerem
+validacao adicional segundo a propria ferramenta), convertido para o formato GROMACS com
+`cgenff_charmm2gmx.py` (Lemkul Lab) e o port CHARMM36 `charmm36-feb2026_cgenff-5.0.ff`
+(Wacha & Lemkul, JCIM 2023).
 
 ### 2.2 Campo de forca e parametros de simulacao
 
@@ -178,8 +200,8 @@ Lepidoptera deste laboratorio).
 
 RMSD do backbone do receptor e do ligante, RMSF por residuo, raio de giro, contatos
 receptor-ligante (< 0,4 nm), pontes de hidrogenio, SASA do receptor e do ligante, e
-distancia minima entre o ligante e os dois residuos de interesse identificados no
-docking (Arg30, Glu279), todas calculadas com ferramentas nativas do GROMACS sobre a
+distancia minima entre o ligante e os residuos de interesse identificados no docking
+({residue_names_txt}), todas calculadas com ferramentas nativas do GROMACS sobre a
 trajetoria pos-processada (`-pbc mol -center` + `-fit rot+trans`).
 
 ### 2.5 Energia livre de ligacao (MM-GBSA)
@@ -212,8 +234,7 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Arg30 | 4,7-4,8 Å | Hidrofobica | {arg30_nm} Å |
-| Glu279 | 1,9 Å | Hidrogenio | {glu279_nm} Å |
+{residue_table}
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
@@ -226,21 +247,21 @@ contatos/H-bonds/SASA) permanece valido e completo.
 Pendente, a preencher **apos** a producao terminar e as analises rodarem (nao
 fabricar numeros de terceiros aqui — buscar e citar explicitamente):
 
-- [ ] Comparar RMSD/RMSF obtidos com faixas tipicas reportadas para dominios RHD de
-      NF-kB em MD (buscar literatura especifica antes de citar valores).
-- [ ] Buscar na literatura estudos computacionais ou experimentais de
-      daidzeina/isoflavonas ligando NF-kB (ou alvos RHD homologos) e comparar
-      modo de ligacao / residuos-chave / valores de ΔG de ligacao.
+- [ ] Comparar RMSD/RMSF obtidos com faixas tipicas reportadas para {target_name} em MD
+      (buscar literatura especifica antes de citar valores).
+- [ ] Buscar na literatura estudos computacionais ou experimentais de {ligand_name}
+      ligando {target_name} (ou alvos homologos) e comparar modo de ligacao /
+      residuos-chave / valores de ΔG de ligacao.
 - [ ] Comparar robustez metodologica (protocolo de equilibracao, cutoffs, forca de
       POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
       (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —
       ver `~/.claude/.claude/agents/bioinformatics.md`.
-- [ ] Avaliar se a persistencia de Arg30/Glu279 ao longo da producao confirma ou
+- [ ] Avaliar se a persistencia de {residue_names_txt} ao longo da producao confirma ou
       refuta a pose de docking original (criterio sugerido: manter contato em
       >50% dos frames pos-equilibracao).
-- [ ] Dado o param penalty=53 do CGenFF (acima do limiar de 50), considerar
-      validacao adicional dos dihedros do anel cromona antes de conclusoes
-      quantitativas fortes sobre energia de ligacao.
+- [ ] Conferir penalidade CGenFF do ligante (`inputs/ligand-UNL*.str`) — se acima de 50,
+      considerar validacao adicional dos dihedros de maior penalidade antes de
+      conclusoes quantitativas fortes sobre energia de ligacao.
 
 ---
 *Nao passou por /humanizer. Revisar citacoes com a skill auditing-academic-sources
@@ -254,6 +275,12 @@ def main():
     ap.add_argument("--analise-dir", required=True)
     ap.add_argument("--mmgbsa-dir", default=None)
     ap.add_argument("--time-ns", type=int, default=100)
+    ap.add_argument("--target-name", required=True)
+    ap.add_argument("--pdb-id", default="")
+    ap.add_argument("--organism", default="")
+    ap.add_argument("--ligand-name", required=True)
+    ap.add_argument("--key-residues", default="",
+                     help="'resid:resname:dockdist:doctype;...' — mesmo formato do samplesheet")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -262,7 +289,10 @@ def main():
     out_path = Path(args.out)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(build_report(analise_dir, mmgbsa_dir, args.time_ns), encoding="utf-8")
+    out_path.write_text(
+        build_report(analise_dir, mmgbsa_dir, args.time_ns, args.target_name, args.pdb_id,
+                     args.organism, args.ligand_name, args.key_residues),
+        encoding="utf-8")
     print(f"[OK] Relatorio gerado em {out_path}")
     if not (analise_dir / "rmsd_backbone.xvg").exists():
         print(f"[AVISO] Nenhum resultado de analise encontrado em {analise_dir} ainda.")
