@@ -1,0 +1,149 @@
+# Dinamica Molecular — p38 alfa MAPK (PDB 4R3C) + Liquiritigenina — Secoes do Artigo
+
+*Gerado automaticamente por `bin/gerar_artigo_md.py`. Revisar antes de usar em texto final
+(passar por /humanizer e pela skill auditing-academic-sources antes de qualquer submissao).*
+
+## Resumo
+
+Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do complexo entre
+p38 alfa MAPK (PDB 4R3C), Homo sapiens e Liquiritigenina, um candidato identificado por triagem
+virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
+CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
+fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
+
+## 1. Introducao
+
+p38α MAPK e uma cinase ativada por estresse central em cascatas de sinalizacao
+inflamatoria, alvo terapeutico estabelecido em doencas inflamatorias cronicas. A
+estrutura cristalografica PDB 4R3C captura o bolso de ligacao ao ATP/regiao de
+articulacao ("hinge"), sitio alvejado aqui pelo docking (AutoDock Vina) com a
+liquiritigenina, flavanona da raiz de alcacuz (*Glycyrrhiza* spp.). Ha precedente
+experimental **direto e recente** de liquiritigenina modulando a via p38 MAPK: em
+modelo de doenca renal cronica induzida por dieta hipersodica, a liquiritigenina se
+liga diretamente e inibe IRAK4, suprimindo a ativacao a jusante das vias p38 MAPK e
+JNK (Yan *et al.*, 2025, *Chem Biol Interact* 418:111578, PMID 40447172, DOI
+10.1016/j.cbi.2025.111578). Esse mecanismo (inibicao indireta de p38 via IRAK4,
+upstream) e distinto do modo de ligacao avaliado aqui (ligacao direta no bolso ATP/
+hinge de p38α, PDB 4R3C) — o precedente da literatura confirma que a liquiritigenina
+interage funcionalmente com a via p38 MAPK, mas nao caracteriza uma ligacao direta
+a p38α; este trabalho avalia computacionalmente, por dinamica molecular classica, se
+a pose de docking predita nesse sitio especifico e estruturalmente estavel ao longo
+do tempo.
+
+## 2. Metodologia
+
+### 2.1 Preparacao do complexo
+
+A estrutura inicial do receptor foi obtida do PDB 4R3C (cadeia A), com os estados
+de protonacao dos residuos ionizaveis determinados para pH 7,4 (condicao fisiologica humana —
+nao o pH 8,2 usado nos demais pipelines deste laboratorio, especifico para midgut alcalino de
+Lepidoptera) via PROPKA, implementado por `pdb2pqr 3.7.1` com campo de forca CHARMM. A pose
+inicial do ligante (resname UNL) foi obtida por docking molecular com AutoDock Vina, com
+interacoes-chave identificadas por analise pos-docking em: Met109, Thr106, Leu167.
+
+A topologia do ligante foi gerada a partir do arquivo de parametros CGenFF 5.0 retornado
+pelo servidor ParamChem (ver `inputs/ligand-UNL*.str` para as penalidades de parametro/carga
+especificas deste ligante — penalidades acima de 50 indicam analogia pobre e requerem
+validacao adicional segundo a propria ferramenta), convertido para o formato GROMACS com
+`cgenff_charmm2gmx.py` (Lemkul Lab) e o port CHARMM36 `charmm36-feb2026_cgenff-5.0.ff`
+(Wacha & Lemkul, JCIM 2023).
+
+### 2.2 Campo de forca e parametros de simulacao
+
+As simulacoes foram conduzidas com GROMACS 2026 (Abraham *et al.*, 2015), campo de forca
+CHARMM36m (Huang *et al.*, 2017) para a proteina e CGenFF 5.0 (Vanommeslaeghe *et al.*,
+2010) para o ligante, agua TIP3P explicita (Jorgensen *et al.*, 1983; parametrizacao
+CHARMM-modificada). Nao-ligados seguiram a recomendacao oficial CHARMM36 para GROMACS:
+`vdwtype = Cut-off` com `vdw-modifier = Force-switch` (`rvdw-switch = 1,0 nm`,
+`rvdw = 1,2 nm`), sem correcao de dispersao de longo alcance (`DispCorr = no`) —
+configuracao distinta do template AMBER99SB-ILDN usado nos demais pipelines deste
+laboratorio. O complexo foi inserido em caixa cubica com margem minima de 1,2 nm,
+solvatado e neutralizado com NaCl a 0,15 M (Joung & Cheatham, 2008), refletindo o
+ambiente ionico fisiologico humano (em vez do KCl 0,10 M usado nos sistemas de
+Lepidoptera deste laboratorio).
+
+### 2.3 Protocolo de equilibracao e producao
+
+1. **Minimizacao de energia** — *steepest descent*, `emtol = 1000 kJ mol⁻¹ nm⁻¹`, ate 50.000 passos.
+2. **NVT (200 ps)** — 300 K, termostato V-rescale (Bussi *et al.*, 2007, τ = 0,1 ps),
+   com restricoes de posicao no receptor (`POSRES`, gerado por `pdb2gmx`) e no ligante
+   (`POSRES_UNL`, gerado por `gmx genrestr`).
+3. **NPT (500 ps)** — 300 K / 1 bar, barostato de Berendsen (τ = 2,0 ps), restricoes mantidas.
+4. **Producao (100 ns)** — sem restricoes, barostato de Parrinello-Rahman (Parrinello &
+   Rahman, 1981; τ = 2,0 ps), integrador *leap-frog* (dt = 2 fs), ligacoes com hidrogenio
+   restringidas por LINCS (Hess *et al.*, 1997), eletrostatica de longo alcance por PME
+   (Darden *et al.*, 1993, `rcoulomb = 1,2 nm`).
+
+### 2.4 Analises
+
+RMSD do backbone do receptor e do ligante, RMSF por residuo, raio de giro, contatos
+receptor-ligante (< 0,4 nm), pontes de hidrogenio, SASA do receptor e do ligante, e
+distancia minima entre o ligante e os residuos de interesse identificados no docking
+(Met109, Thr106, Leu167), todas calculadas com ferramentas nativas do GROMACS sobre a
+trajetoria pos-processada (`-pbc mol -center` + `-fit rot+trans`).
+
+### 2.5 Energia livre de ligacao (MM-GBSA)
+
+A energia livre de ligacao foi estimada por MM-GBSA (`gmx_MMPBSA`, protocolo de
+trajetoria unica, `igb=2`, decomposicao por residuo habilitada) sobre os frames da
+producao pos-equilibracao. **Nota metodologica:** esta mesma ferramenta falhou de
+forma irreconciliavel em outro projeto deste laboratorio (Milena-MD, serie
+trypsin×GORE12T) apos 3 tentativas de correcao; o modulo aqui foi reescrito do zero
+evitando o erro de linha de comando identificado retroativamente (flags `-cs/-ct/-ci`
+sem valor, causando deteccao falsa de "argumentos duplicados"). Tratar resultados de
+MM-GBSA como suplementares — se a etapa falhar, o restante do pipeline (RMSD/RMSF/
+contatos/H-bonds/SASA) permanece valido e completo.
+
+## 3. Resultados e Discussao
+
+### 3.1 Estabilidade estrutural
+
+| Metrica | Valor (media ± DP) |
+|---|---|
+| RMSD backbone receptor | N/D (rodar as analises) |
+| RMSD ligante (UNL) | N/D (rodar as analises) |
+| Raio de giro (receptor) | N/D (rodar as analises) |
+| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
+| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
+| SASA receptor | N/D (rodar as analises) |
+| SASA ligante | N/D (rodar as analises) |
+
+### 3.2 Persistencia dos contatos preditos por docking
+
+| Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
+|---|---|---|---|
+| Met109 | 1.9 Å | Hidrogenio | N/D Å |
+| Thr106 | 3.8 Å | Hidrofobica | N/D Å |
+| Leu167 | 3.7 Å | Hidrofobica | N/D Å |
+
+### 3.3 Energia livre de ligacao (MM-GBSA)
+
+ΔG total: **N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar como opcional, ja falhou de forma irreconciliavel em outro projeto deste laboratorio, ver Milena-MD)**
+
+*(resultados ainda nao gerados — rodar o pipeline Nextflow completo)*
+
+### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
+
+Pendente, a preencher **apos** a producao terminar e as analises rodarem (nao
+fabricar numeros de terceiros aqui — buscar e citar explicitamente):
+
+- [ ] Comparar RMSD/RMSF obtidos com faixas tipicas reportadas para p38 alfa MAPK em MD
+      (buscar literatura especifica antes de citar valores).
+- [x] Liquiritigenina x p38 MAPK (funcional, via IRAK4 upstream, nao ligacao
+      direta a p38α): Yan et al. 2025 (PMID 40447172) — unico estudo
+      encontrado ate agora; nao ha ainda docking/MD publicado especificamente
+      no bolso ATP/hinge do p38α (PDB 4R3C) pra comparar modo de ligacao.
+- [ ] Comparar robustez metodologica (protocolo de equilibracao, cutoffs, forca de
+      POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
+      (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —
+      ver `~/.claude/.claude/agents/bioinformatics.md`.
+- [ ] Avaliar se a persistencia de Met109, Thr106, Leu167 ao longo da producao confirma ou
+      refuta a pose de docking original (criterio sugerido: manter contato em
+      >50% dos frames pos-equilibracao).
+- [ ] Conferir penalidade CGenFF do ligante (`inputs/ligand-UNL*.str`) — se acima de 50,
+      considerar validacao adicional dos dihedros de maior penalidade antes de
+      conclusoes quantitativas fortes sobre energia de ligacao.
+
+---
+*Nao passou por /humanizer. Revisar citacoes com a skill auditing-academic-sources
+antes de qualquer uso em documento final.*
