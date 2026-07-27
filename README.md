@@ -1,8 +1,10 @@
 # Tatiana-MD
 
-Dinamica molecular do dominio de ligacao a DNA de **NF-kB** (PDB **2I9T**, p65/p50
-heterodimero — cadeia A usada isoladamente, residuos 17-291) em complexo com a
-isoflavona **daidzeina** (resname `UNL`), pose obtida por docking com AutoDock Vina.
+Dinamica molecular de 4 pares receptor-ligante (flavonoides/isoflavonas x alvos
+humanos), triados por docking com AutoDock Vina: **2I9T** (NF-kB) + Daidzeina,
+**4R3C** (p38α MAPK) + Liquiritigenina, **6FWC** (MAO-B) + Formononetina,
+**7K2S** (Keap1) + Biochanina A. Pipeline samplesheet-driven, roda os 4 sistemas
+em loop sequencial na GPU unica do servidor (ver "Status em 2026-07-26" abaixo).
 
 Campo de forca: **CHARMM36m** (proteina) + **CGenFF 5.0** via ParamChem (ligante) —
 diferente dos demais pipelines deste laboratorio (MD-gromacs, Milena-MD), que usam
@@ -24,15 +26,27 @@ pequena molecula em GROMACS (tutorial Lemkul, T4-lisozima+JZ4).
 - [x] MM-GBSA (`gmx_MMPBSA`) — reescrito do zero evitando o bug real que
       derrubou essa mesma etapa no projeto irmao Milena-MD (ver secao dedicada)
 - [x] Gerador de relatorio (`docs/artigo_md.md`, com secao de MM-GBSA)
-- [x] Push para `github.com/eulaliobqi/tatiane-MD` — 6 commits, `de99351` o mais recente
-- [x] **Rodando de verdade no servidor** (2026-07-13): `PREPARE_PH` → `LIGAND_TOPOLOGY`
-      → `PREPARE_COMPLEX` → `TOPOLOGY` → `BOX_SOLVATE_IONS` → `MINIMIZATION` todos
-      completos com sucesso; `NVT` em andamento (primeira etapa com uso pesado de
-      GPU — CUDA confirmado disponivel e ativo antes do inicio, ver secao
-      "Bugs reais" abaixo pro historico completo de debugging)
-- [ ] `NPT` → `PRODUCTION` (100 ns, a etapa longa) → `POSTPROCESS` → analises →
-      `MMGBSA`/`PLOT`/`REPORT` — retomar amanha com `-resume` acompanhando
-      `nextflow.log` no screen `tatiana-2i9t-daidzeina`
+- [x] Push para `github.com/eulaliobqi/tatiane-MD`
+- [x] **2I9T-daidzeina: pipeline completo** (2026-07-13/15), incl. analises extra
+      por fase (achado: pose de docking dissocia em ~65-78ns, migra pra outro
+      sitio — ver memoria do projeto)
+- [x] **Generalizado pra 4 sistemas** (2026-07-26): samplesheet com colunas
+      por amostra (`key_residues`, `target_name`, `organism`, `ligand_name`,
+      `pdb_id`, `run_extra_analyses`); `ANALYSES_RESIDUES`/`PLOT`/
+      `gerar_artigo_md.py` parametrizados em vez de hardcoded pro 2I9T;
+      `maxForks=1` nos labels de GPU serializa o loop na GPU unica
+- [x] Ligantes novos (4R3C/6FWC/7K2S) parametrizados via CGenFF/ParamChem
+      (`cgenff.com`) — estrutura quimica da PubChem (InChI) alinhada a pose
+      real do docking via correspondencia de grafo + Kabsch (`.pdbqt` do
+      AutoDock nao tem H apolares nem ordem de ligacao explicita)
+- [x] **Rodando de verdade no servidor** (2026-07-26): 3 sistemas novos em
+      loop sequencial, screen `tatiana-loop-3sistemas`. 2 bugs reais nao
+      vistos no 2I9T encontrados/corrigidos rodando pro 6FWC (ver "Bugs reais"):
+      coluna de resname CHARMM de 4 letras (ASPP/GLUP) e ordem dos prompts
+      `pdb2gmx -asp -glu`. Sem erros desde entao.
+- [ ] `PRODUCTION` (100ns cada, ~11h de GPU por sistema) → `POSTPROCESS` →
+      analises → `MMGBSA`/`PLOT`/`REPORT` dos 3 sistemas novos — retomar
+      verificando `nextflow-loop.log` no screen `tatiana-loop-3sistemas`
 
 ## Arquitetura Nextflow
 
@@ -89,9 +103,37 @@ verdade. Todos ja corrigidos e commitados:
    todos os `.mdp` e o modulo MM-GBSA — mudanca bem maior sem garantia de
    nao ter sua propria lacuna de parametrizacao nessa mesma regiao do anel.
 
-**O que ainda nao foi validado de verdade**: nada além de `TOPOLOGY`/
-`BOX_SOLVATE_IONS` rodou ainda (nenhum GPU/mdrun real). `MINIMIZATION` em
-diante, `MMGBSA`, `PLOT`/`REPORT` continuam sem execucao real.
+**O que ainda nao foi validado de verdade em 2026-07-13**: nada além de `TOPOLOGY`/
+`BOX_SOLVATE_IONS` tinha rodado ate entao (nenhum GPU/mdrun real). Pipeline
+completo desde entao pro 2I9T — ver "Status em 2026-07-26" abaixo pros
+sistemas novos.
+
+### Bugs reais encontrados generalizando pro 6FWC (2026-07-26)
+
+Nenhum destes apareceu no 2I9T porque nenhum residuo daquele sistema exigiu
+protonacao de Asp/Glu (so His, que nao tem esse problema — ver abaixo). Os
+dois foram descobertos rodando de verdade contra o receptor do 6FWC (MAO-B),
+onde o PROPKA protonou Glu437:
+
+6. **`gmx pdb2gmx` nao le resname CHARMM de 4 letras** (`ASPP`/`GLUP`, usados
+   pelo PDB2PQR pra Asp/Glu protonados) **em nenhuma posicao de coluna do
+   PDB** — confirmado testando `pdb2gmx` diretamente no servidor com o nome
+   em varias posicoes; ele sempre le a janela padrao de 3 colunas e corta a
+   1a letra ("GLUP"->"LUP"), erro fatal `residue LUP437 is of type 'Other'`.
+   A forma suportada pelo GROMACS e o par de flags interativos
+   `pdb2gmx -asp -glu` (prompt 0/1 por residuo), nao embutir a titulacao no
+   nome do residuo do PDB. `bin/pdb2pqr_process_charmm.py` agora reverte
+   ASPP/GLUP pro nome padrao (ASP/GLU) e grava a lista de residuos
+   protonados em `<receptor_ph.pdb>.protonated.txt`.
+7. **Ordem dos prompts do `pdb2gmx -asp -glu` nao e sequencial pelo
+   arquivo** — ele pergunta **todos os residuos ASP primeiro** (na ordem do
+   arquivo), **depois todos os GLU** (idem), nao intercalado por posicao
+   como seria natural assumir. A 1a tentativa de `bin/build_asp_glu_answers.py`
+   assumiu ordem sequencial misturada e a resposta "protonado" caiu no
+   residuo errado **silenciosamente** (sem erro fatal — GLU437 saiu com
+   carga -1/nao-protonado em vez de 0/protonado). Corrigido agrupando as
+   respostas por tipo (ASP primeiro, GLU depois) — confirmado no topol.top
+   final: `residue 437 GLUH rtp GLUP q 0.0`.
 
 ## Antes de rodar — decisoes ja tomadas, revisar se necessario
 
@@ -157,6 +199,43 @@ python bin/plot_results.py --analise-dir results/2I9T-daidzeina/analise --titulo
 python bin/gerar_artigo_md.py --analise-dir results/2I9T-daidzeina/analise \
     --mmgbsa-dir results/2I9T-daidzeina/mmgbsa --out docs/artigo_md.md
 ```
+
+## Status em 2026-07-26 (fim da sessao) — como continuar
+
+Pipeline generalizado de 1 pra 4 sistemas (2I9T ja concluido + 4R3C/6FWC/7K2S
+novos), 2 bugs reais de protonacao Asp/Glu encontrados e corrigidos rodando
+de verdade (ver secao "Bugs reais... 2026-07-26" acima). Loop rodando sem
+erros desde a correcao: `6FWC` completou toda a equilibracao (NPT) e entrou
+em `PRODUCTION`; `4R3C` em `NPT`; `7K2S` na fila de `PRODUCTION` (esperando a
+GPU liberar — `maxForks=1` serializa corretamente).
+
+**Pra continuar amanha**, no servidor:
+
+```bash
+ssh eulalio@200.235.143.10
+cd ~/gromacs/tatiane-MD
+screen -r tatiana-loop-3sistemas   # ou screen -d -r se ja estiver attached em outro lugar
+tail -60 nextflow-loop.log
+nvidia-smi   # confirma se ainda esta rodando ou se terminou/caiu
+
+# se caiu e precisar retomar:
+git pull
+nextflow run main.nf -profile local,conda -resume -with-report -with-trace 2>&1 | tee -a nextflow-loop.log
+```
+
+Estimativa: ~11h de GPU de `PRODUCTION` por sistema novo (2 restantes a
+comecar do zero + 1 em andamento), total ainda em aberto quando a sessao
+terminou. Depois que os 3 sistemas novos terminarem `PRODUCTION`→`POSTPROCESS`
+→`ANALYSES`, conferir:
+
+- `docs/<sample_id>/artigo_md.md` — relatorio parametrizado por sistema
+  (alvo/PDB/organismo/ligante/residuos-chave, ver `bin/gerar_artigo_md.py`)
+- `~/gromacs/results-tatiana/<sample_id>/analise/painel_resumo.png` — RMSD/
+  RMSF/Rg/contatos/H-bonds/SASA + distancias dos residuos-chave por sistema
+- Os 6 modulos extra (`PHASE_SPLIT` etc.) **nao rodam** pros 3 sistemas
+  novos nesta rodada (`run_extra_analyses=false` no samplesheet) — decidir
+  caso a caso, depois de ver RMSD/distancias, se algum justifica uma 2a
+  passada com esses modulos ligados
 
 ## Depois que a simulacao terminar (pedidos feitos durante o preparo)
 
