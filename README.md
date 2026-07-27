@@ -237,6 +237,14 @@ terminou. Depois que os 3 sistemas novos terminarem `PRODUCTION`→`POSTPROCESS`
   caso a caso, depois de ver RMSD/distancias, se algum justifica uma 2a
   passada com esses modulos ligados
 
+**`docs/<sample_id>/artigo_md.md`** ja existe pros 4 sistemas (metodologia +
+introducao fundamentada em literatura real do PubMed — ver commit `3cc8a8e`),
+mas **so o 2I9T tem resultados reais** preenchidos; os outros 3 estao com a
+secao 3 marcada N/D honestamente. Regenerar cada um com
+`bin/gerar_artigo_md.py` (ver cabecalho do proprio script pros flags) assim
+que `ANALYSES`/`ANALYSES_RESIDUES` de cada sistema terminarem, preservando
+manualmente a introducao ja escrita (o script sobrescreve o arquivo inteiro).
+
 ## Depois que a simulacao terminar (pedidos feitos durante o preparo)
 
 1. **`python bin/gerar_artigo_md.py`** — gera `docs/artigo_md.md` no formato
