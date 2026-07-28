@@ -1,9 +1,9 @@
 # Dinamica Molecular — NF-kB (dominio de ligacao a DNA p65/p50) (PDB 2I9T) + Daidzeina — Secoes do Artigo
 
-*Gerado automaticamente por `bin/gerar_artigo_md.py`, com a secao 3.2.1 (analise por
-fase) adicionada manualmente a partir da analise ad-hoc de 2026-07-14 — ver
-`memory/project_tatiana_md.md`. Revisar antes de usar em texto final (passar por
-/humanizer e pela skill auditing-academic-sources antes de qualquer submissao).*
+*Gerado automaticamente por `bin/gerar_artigo_md.py`, com a Tabela 3.1/3.2 e o Resumo
+atualizados manualmente em 2026-07-28 pra refletir a producao mais recente deste sistema
+(ver nota em 3.2.1 sobre a rodada anterior). Revisar antes de usar em texto final (passar
+por /humanizer e pela skill auditing-academic-sources antes de qualquer submissao).*
 
 ## Resumo
 
@@ -11,12 +11,15 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 NF-kB (dominio de ligacao a DNA p65/p50) (PDB 2I9T), Mus musculus e Daidzeina, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). O achado principal nao e um valor medio unico: a trajetoria de
-100 ns mostra uma **transicao de fase real e sequencial** por volta de 65-78 ns — a pose
-de docking e mantida com excelente concordancia ate ~60 ns, depois o ligante migra pra
-outro sitio na superficie do receptor (ver secao 3.2 pra estatisticas separadas por fase;
-a media simples de 100ns reportada na Tabela 3.1, RMSD backbone 0,545 ± 0,337 nm, mistura
-as duas fases e por isso tem desvio-padrao alto — nao deve ser lida isoladamente).
+fisiologicas humanas). Nesta producao (concluida 2026-07-27/28), a pose de docking se manteve
+proxima da predicao original ao longo da maior parte da trajetoria — RMSD do backbone de
+0,316 ± 0,104 nm e 185,9 ± 42,4 contatos receptor-ligante em media, com Arg30 e Glu279
+(residuos-chave do docking) mantendo distancia media de 2,61 Å e 4,02 Å, respectivamente
+(docking previu 4,7-4,8 Å e 1,9 Å). Uma producao INDEPENDENTE anterior deste mesmo sistema
+(protocolo identico, rodada 2026-07-13/16) identificou uma transicao de fase — o ligante
+migrando pra outro sitio na superficie do receptor por volta de 65-78 ns — nao replicada
+(nem re-testada) nesta rodada; ver secao 3.2.1 pra essa analise historica, mantida por
+valor metodologico mas nao representativa dos dados atuais deste documento.
 
 ## 1. Introducao
 
@@ -105,31 +108,48 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 ### 3.1 Estabilidade estrutural
 
+**Dados desta producao (concluida 2026-07-27/28)** — ver nota em 3.2.1 sobre a rodada
+anterior (2026-07-13/16), que usava a mesma configuracao mas seguiu uma trajetoria
+diferente (MD e processo estocastico; ver 3.2.1 pra detalhes).
+
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | 0.545 ± 0.337 nm |
-| RMSD ligante (UNL) | 0.091 ± 0.025 nm |
-| Raio de giro (receptor) | 2.425 ± 0.071 nm |
-| Contatos receptor-ligante (<0,4nm) | 107.7 ± 58.6 |
-| Pontes de hidrogenio receptor-ligante | 0.98 ± 0.75 |
-| SASA receptor | 157.129 ± 2.580 nm² |
-| SASA ligante | 4.581 ± 0.197 nm² |
+| RMSD backbone receptor | 0.316 ± 0.104 nm |
+| RMSD ligante (UNL) | 0.052 ± 0.021 nm |
+| Raio de giro (receptor) | 2.337 ± 0.021 nm |
+| Contatos receptor-ligante (<0,4nm) | 185.9 ± 42.4 |
+| Pontes de hidrogenio receptor-ligante | 1.50 ± 0.85 |
+| SASA receptor | 159.123 ± 2.660 nm² |
+| SASA ligante | 4.525 ± 0.200 nm² |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
-A media de 100 ns mistura duas fases estruturalmente distintas — ver 3.2.1. Os valores
-abaixo (media simples sobre a trajetoria inteira) sao apresentados por completude, mas a
-leitura correta esta na tabela por fase logo em seguida.
-
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD (100ns) |
 |---|---|---|---|
-| Arg30 | 4.7-4.8 Å | Hidrofobica | 15.14 Å |
-| Glu279 | 1.9 Å | Hidrogenio | 17.96 Å |
+| Arg30 | 4.7-4.8 Å | Hidrofobica | 2.61 ± 0.64 Å |
+| Glu279 | 1.9 Å | Hidrogenio | 4.02 ± 1.35 Å |
 
-#### 3.2.1 Analise por fase (2026-07-14, script ad-hoc sobre os `.xvg` desta mesma corrida)
+Ambos os residuos mantiveram distancia media proxima da predicao do docking ao longo dos
+100 ns desta producao — sem evidencia, nesta rodada, da transicao de fase descrita em 3.2.1
+pra uma producao anterior e independente do mesmo sistema.
+
+#### 3.2.1 [ANALISE HISTORICA — rodada anterior, 2026-07-13/16, NAO representa os dados atuais deste documento]
+
+**Atualizado 2026-07-28**: esta secao descreve uma producao INDEPENDENTE anterior deste
+mesmo sistema (mesmo protocolo/configuracao, mas rodada de MD diferente — concluida
+2026-07-13, recomputada 2026-07-15/16 apos um bug de cache do Nextflow). A producao ATUAL
+deste sistema (results-tatiana/2I9T-daidzeina/, concluida 2026-07-27/28, dados em 3.1/3.2
+acima) **nao foi verificada** quanto a uma transicao equivalente — o RMSD backbone desta
+rodada atual cruza 0,6 nm pela primeira vez apenas em ~87 ns (vs. ~68 ns na rodada antiga),
+com padrao menos monotonico (sobe 60-70ns, cai 70-80ns, sobe de novo 80-100ns) — insuficiente
+pra afirmar ou descartar um evento analogo sem analise dedicada (nao feita). Mantida abaixo
+por valor metodologico (mostra que a pose de docking pode ser metaestavel em pelo menos uma
+das rodadas independentes deste sistema) — **nao usar os numeros desta subsecao como
+descricao dos dados atuais em 3.1/3.2**.
 
 Divisao em duas fases a partir da inspecao visual do RMSD backbone/distancias (nao
-deteccao automatica): **fase ligada** ≈0-60 ns e **fase pos-transicao** ≈65-100 ns.
+deteccao automatica, rodada 2026-07-13/16): **fase ligada** ≈0-60 ns e **fase
+pos-transicao** ≈65-100 ns.
 
 | Metrica | Fase ligada (0-60ns) | Fase pos-transicao (65-100ns) |
 |---|---|---|
@@ -138,45 +158,41 @@ deteccao automatica): **fase ligada** ≈0-60 ns e **fase pos-transicao** ≈65-
 | Pontes de H receptor-ligante | 1,70 ± 0,54 | — |
 | Contatos receptor-ligante | 127,8 ± 26,8 | menor (ligante em novo sitio) |
 
-**Sequencia da transicao**: RMSD do backbone cruza 0,6 nm em ~68 ns (receptor muda de
-conformacao primeiro — Rg sobe de 2,478 para 2,505 nm, abertura de dominio) → contato
-com Arg30 rompe em ~74 ns → ligacao de H com Glu279 rompe por ultimo, ~77 ns.
+**Sequencia da transicao** (rodada 2026-07-13/16): RMSD do backbone cruza 0,6 nm em ~68 ns
+(receptor muda de conformacao primeiro — Rg sobe de 2,478 para 2,505 nm, abertura de
+dominio) → contato com Arg30 rompe em ~74 ns → ligacao de H com Glu279 rompe por ultimo,
+~77 ns.
 
-**O ligante nao se solvatou** — apesar das distancias aos dois residuos do docking
-subirem na fase pos-transicao, a distancia minima receptor-ligante (`mindist`) continua
-<1 nm na maior parte do tempo e a SASA do ligante nao muda (~4,6 nm² do inicio ao fim da
-trajetoria, ver Tabela 3.1). Isto indica que a daidzeina **migrou para outro sitio na
-superficie do receptor**, nao se dissociou pro solvente. RMSF por residuo: media
-0,275 nm; Arg30 = 0,3275 nm e Glu279 = 0,3403 nm (acima da mediana — sitio de docking em
-regiao de loop moderadamente flexivel, consistente com a metaestabilidade observada).
+**O ligante nao se solvatou** (nessa rodada) — apesar das distancias aos dois residuos do
+docking subirem na fase pos-transicao, a distancia minima receptor-ligante (`mindist`)
+continuava <1 nm na maior parte do tempo e a SASA do ligante nao mudava (~4,6 nm² do inicio
+ao fim da trajetoria daquela rodada). Isto indica que a daidzeina **migrou para outro
+sitio na superficie do receptor**, nao se dissociou pro solvente, naquela producao
+especifica. RMSF por residuo (rodada antiga): media 0,275 nm; Arg30 = 0,3275 nm e
+Glu279 = 0,3403 nm (acima da mediana — sitio de docking em regiao de loop moderadamente
+flexivel, consistente com a metaestabilidade observada naquela rodada).
 
-**Leitura cientifica**: a pose predita pelo AutoDock Vina e um **minimo local
-metaestavel**, nao o minimo global — resultado positivo (nao falha do protocolo de
-docking/MD), mas que exige tratar qualquer conclusao de energia de ligacao sobre a pose
-original como valida apenas para os primeiros ~60 ns, nao para a trajetoria inteira.
-Antes de qualquer conclusao mais forte, seria necessario confirmar que o evento e real
-e nao artefato de PBC/fitting (replica adicional ou trajetoria estendida — ver 3.4).
+**Leitura cientifica**: a pose predita pelo AutoDock Vina se mostrou um **minimo local
+metaestavel** em pelo menos uma das producoes independentes deste sistema — resultado
+cientificamente relevante (nao falha do protocolo de docking/MD), mas que **nao foi
+confirmado como reprodutivel** entre rodadas independentes (replica formal nunca rodada).
+Antes de qualquer conclusao mais forte sobre a estabilidade real da pose, seria necessario
+rodar replicas adicionais com deteccao automatica de transicao (nao inspecao visual) e
+comparar consistentemente entre elas — ver 3.4.
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
 ΔG total: **-15.19 ± 5.23 kcal/mol** (GB, 100 frames uniformemente distribuidos
-ao longo dos 100 ns, decomposicao por residuo habilitada — `results/2I9T-daidzeina/mmgbsa/`)
+ao longo dos 100 ns da producao atual, decomposicao por residuo habilitada —
+`results/2I9T-daidzeina/mmgbsa/`)
 
-**Nota metodologica importante**: este e' um valor de trajetoria UNICA (nao separado
-por fase bound/relocated), calculado sobre a producao atual deste sistema (rodada
-concluida 2026-07-27/28, distinta da rodada original de 2026-07-13/15 usada na
-analise por fase da secao 3.2.1 abaixo — MD e' processo estocastico, seeds/rodadas
-diferentes seguem trajetorias diferentes mesmo com protocolo identico). Nesta
-rodada especifica, o RMSD backbone cruza 0,6 nm pela primeira vez em ~87 ns (nao
-~68 ns como na rodada de 2026-07-14), com padrao menos monotonico (sobe 60-70ns,
-cai 70-80ns, sobe de novo 80-100ns) — os limites fixos `phase_bound_end_ns=60`/
-`phase_reloc_start_ns=65` do PHASE_SPLIT (calibrados na rodada antiga) foram
-reaplicados sem ajuste aos resultados novos de CONTACT_MAP/PROLIF_FINGERPRINT/
-FE_RERUN gerados em 2026-07-28 — tratar a separacao bound/relocated desses
-resultados como aproximada pra ESTA rodada, nao recalibrada. O ΔG de trajetoria
-unica acima soma toda a heterogeneidade conformacional (por isso o desvio-padrao
-alto, 5.23 kcal/mol) — nao deve ser lido como energia de um unico estado de
-ligacao bem definido.
+**Nota metodologica**: valor de trajetoria UNICA (nao separado por fase bound/
+relocated), sobre a producao atual (3.1/3.2). Os resultados de `CONTACT_MAP`/
+`PROLIF_FINGERPRINT`/`FE_RERUN` gerados em 2026-07-28 (ver `analise_extra/`) usaram
+os limites fixos `phase_bound_end_ns=60`/`phase_reloc_start_ns=65` do `PHASE_SPLIT`
+— calibrados na rodada antiga (3.2.1), aplicados sem recalibrar a producao atual;
+tratar a separacao bound/relocated desses resultados como aproximada, nao
+recalibrada, pra esta producao.
 
 ### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
 
@@ -195,12 +211,22 @@ fabricar numeros de terceiros aqui — buscar e citar explicitamente):
       POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
       (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —
       ver `~/.claude/.claude/agents/bioinformatics.md`.
-- [x] Persistencia de Arg30/Glu279 — ver 3.2.1: confirma a pose de docking nos
-      primeiros ~60ns (60% da producao), depois rompe numa transicao sequencial
-      real. Falta: replica/trajetoria estendida pra confirmar que nao e artefato
-      (ver item abaixo).
-- [ ] Rodar replica curta ou estender a trajetoria — um unico run de 100ns nao
-      distingue evento termodinamico real de flutuacao estocastica rara.
+- [x] Persistencia de Arg30/Glu279 — **producao atual** (3.1/3.2): distancia media
+      proxima da predicao do docking ao longo dos 100ns inteiros, sem ruptura
+      visivel. **Rodada historica** (3.2.1, producao independente anterior): pose
+      confirmada nos primeiros ~60ns, depois rompe numa transicao sequencial —
+      NAO observado (nem testado com o mesmo criterio) na producao atual.
+- [x] Replica independente — por acidente de infraestrutura (bug de cache do
+      Nextflow, ver 3.2.1, e trabalho de generalizacao do pipeline pra 4 sistemas),
+      este sistema acabou tendo 2+ producoes de 100ns independentes do zero (mesmo
+      protocolo, seeds diferentes). Achado: elas **nao concordam** — RMSD cruza
+      0,6nm em ~68ns numa e ~87ns (padrao menos monotonico) na outra. Isso e
+      evidencia inicial (nao formal/sistematica) de que a transicao de fase
+      documentada em 3.2.1 pode ser flutuacao estocastica sensivel a seed, nao um
+      evento termodinamico reprodutivel — mas as 2 rodadas nunca foram comparadas
+      lado a lado com o mesmo criterio automatico (so inspecao visual pontual).
+      Uma replica FORMAL (mesmo ponto de partida, so seed de velocidade diferente,
+      analise automatica consistente) ainda nao foi rodada.
 - [ ] `gmx dssp` do receptor em torno de ~65-70ns — checar se ha
       desenovelamento local/movimento de loop que abriu o sitio novo.
 - [ ] Conferir penalidade CGenFF do ligante (`inputs/ligand-UNL*.str`) — se acima de 50,
