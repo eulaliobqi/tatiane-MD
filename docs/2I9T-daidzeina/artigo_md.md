@@ -180,6 +180,42 @@ Antes de qualquer conclusao mais forte sobre a estabilidade real da pose, seria 
 rodar replicas adicionais com deteccao automatica de transicao (nao inspecao visual) e
 comparar consistentemente entre elas — ver 3.4.
 
+#### 3.2.2 Analise complementar: mapa de contatos e fingerprint quimico (2026-07-28)
+
+Para investigar se a producao ATUAL (3.1/3.2) tambem apresenta algum deslocamento do
+ligante (mesmo sem a transicao classica documentada em 3.2.1), a trajetoria foi
+dividida em duas fases usando os limites do `PHASE_SPLIT` calibrados na rodada antiga
+(0-60ns "bound", 65-100ns "relocated" — aproximado pra esta rodada, ver nota
+metodologica na secao 3.3) e analisada com `CONTACT_MAP` (frequencia de contato por
+residuo, corte <0,4nm) e `PROLIF_FINGERPRINT` (perfil de interacoes quimicas).
+
+**Os residuos de maior frequencia de contato sao praticamente os mesmos nas duas
+fases** — Lys28, Arg30, Glu49, Arg50, Leu280 e Glu282 permanecem entre os residuos
+mais contatados em ambas (>0,9 na fase "bound", entre 0,71-0,98 na fase "relocated") —
+mas com frequencia GERALMENTE MENOR na fase "relocated". A diferenca real esta em dois
+pontos especificos: a fase "relocated" **perde quase completamente** o contato com
+Glu193/Leu194 (0,98/0,95 na fase "bound" → 0,17/ausente do top-15 na fase
+"relocated") e **ganha** contato novo com Gln29 (0,45), Arg278 (0,42) e Asp277 (0,33),
+praticamente ausentes na fase "bound".
+
+**Interpretacao**: mesmo nesta rodada (sem a transicao classica de 3.2.1), ha um
+indicio de deslocamento LATERAL sutil da daidzeina dentro da MESMA regiao geral de
+interface (loop 277-283 + helice 28-52) — perdendo profundidade de contato com o
+subsitio Glu193/Leu194 e ganhando contato com o lado do loop mais proximo de
+Arg278/Asp277, em vez de permanecer perfeitamente fixa ou migrar pra um sitio
+totalmente distante. Isso e consistente com (nao identico a) o achado da rodada
+antiga: o CONTATO geral com o grupo de residuos-chave persiste, mas a geometria fina
+de contato oscila ao longo da trajetoria.
+
+`FE_RERUN` (energia de interacao Coulomb-SR + LJ-SR em vacuo, sem termo de
+solvatacao — nao equivalente ao MM-GBSA da secao 3.3) deu ΔE_MM = -200,11 ± 29,27
+kJ/mol na fase "bound" (1001 frames) contra -167,61 ± 51,09 kJ/mol na fase
+"relocated" (584 frames) — interacao mais fraca E mais variavel na fase
+"relocated", direcionalmente consistente com o deslocamento lateral observado no
+mapa de contatos. Ver `analise_extra/{bound,relocated}/` pros arquivos completos
+(`contact_map.png`, `prolif_heatmap.png`, `interface_residues.csv`,
+`free_energy_estimate.txt`).
+
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
 ΔG total: **-15.19 ± 5.23 kcal/mol** (GB, 100 frames uniformemente distribuidos
