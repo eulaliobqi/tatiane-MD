@@ -159,7 +159,24 @@ e nao artefato de PBC/fitting (replica adicional ou trajetoria estendida — ver
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
-ΔG total: **N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar como opcional, ja falhou de forma irreconciliavel em outro projeto deste laboratorio, ver Milena-MD)**
+ΔG total: **-15.19 ± 5.23 kcal/mol** (GB, 100 frames uniformemente distribuidos
+ao longo dos 100 ns, decomposicao por residuo habilitada — `results/2I9T-daidzeina/mmgbsa/`)
+
+**Nota metodologica importante**: este e' um valor de trajetoria UNICA (nao separado
+por fase bound/relocated), calculado sobre a producao atual deste sistema (rodada
+concluida 2026-07-27/28, distinta da rodada original de 2026-07-13/15 usada na
+analise por fase da secao 3.2.1 abaixo — MD e' processo estocastico, seeds/rodadas
+diferentes seguem trajetorias diferentes mesmo com protocolo identico). Nesta
+rodada especifica, o RMSD backbone cruza 0,6 nm pela primeira vez em ~87 ns (nao
+~68 ns como na rodada de 2026-07-14), com padrao menos monotonico (sobe 60-70ns,
+cai 70-80ns, sobe de novo 80-100ns) — os limites fixos `phase_bound_end_ns=60`/
+`phase_reloc_start_ns=65` do PHASE_SPLIT (calibrados na rodada antiga) foram
+reaplicados sem ajuste aos resultados novos de CONTACT_MAP/PROLIF_FINGERPRINT/
+FE_RERUN gerados em 2026-07-28 — tratar a separacao bound/relocated desses
+resultados como aproximada pra ESTA rodada, nao recalibrada. O ΔG de trajetoria
+unica acima soma toda a heterogeneidade conformacional (por isso o desvio-padrao
+alto, 5.23 kcal/mol) — nao deve ser lido como energia de um unico estado de
+ligacao bem definido.
 
 ### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
 

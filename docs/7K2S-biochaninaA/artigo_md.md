@@ -114,7 +114,8 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
-ΔG total: **N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar como opcional, ja falhou de forma irreconciliavel em outro projeto deste laboratorio, ver Milena-MD)**
+ΔG total: **-4.86 ± 4.82 kcal/mol** (GB, 100 frames uniformemente distribuidos
+ao longo dos 100 ns, decomposicao por residuo habilitada — `results/7K2S-biochaninaA/mmgbsa/`)
 
 *(resultados ainda nao gerados — rodar o pipeline Nextflow completo)*
 
