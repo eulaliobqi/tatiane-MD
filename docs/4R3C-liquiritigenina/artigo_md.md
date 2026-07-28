@@ -9,16 +9,26 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 p38 alfa MAPK (PDB 4R3C), Homo sapiens e Liquiritigenina, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). Resultados preliminares indicam RMSD do backbone de 0.298 ± 0.046 nm e 318 contatos receptor-ligante em media.
+fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
 
 ## 1. Introducao
 
-p38 alfa MAPK (PDB 4R3C), Homo sapiens foi selecionado como alvo de triagem virtual para
-Liquiritigenina, com a pose de docking (AutoDock Vina) avaliada quanto a estabilidade temporal
-por dinamica molecular classica. *(Secao a expandir com contexto biologico especifico do alvo
-e revisao da literatura sobre o ligante — ver checklist na secao 3.4; nenhuma afirmacao sobre
-relevancia biologica ou precedente na literatura deve ser incluida aqui sem verificacao
-explicita, ver skill auditing-academic-sources.)*
+p38α MAPK e uma cinase ativada por estresse central em cascatas de sinalizacao
+inflamatoria, alvo terapeutico estabelecido em doencas inflamatorias cronicas. A
+estrutura cristalografica PDB 4R3C captura o bolso de ligacao ao ATP/regiao de
+articulacao ("hinge"), sitio alvejado aqui pelo docking (AutoDock Vina) com a
+liquiritigenina, flavanona da raiz de alcacuz (*Glycyrrhiza* spp.). Ha precedente
+experimental **direto e recente** de liquiritigenina modulando a via p38 MAPK: em
+modelo de doenca renal cronica induzida por dieta hipersodica, a liquiritigenina se
+liga diretamente e inibe IRAK4, suprimindo a ativacao a jusante das vias p38 MAPK e
+JNK (Yan *et al.*, 2025, *Chem Biol Interact* 418:111578, PMID 40447172, DOI
+10.1016/j.cbi.2025.111578). Esse mecanismo (inibicao indireta de p38 via IRAK4,
+upstream) e distinto do modo de ligacao avaliado aqui (ligacao direta no bolso ATP/
+hinge de p38α, PDB 4R3C) — o precedente da literatura confirma que a liquiritigenina
+interage funcionalmente com a via p38 MAPK, mas nao caracteriza uma ligacao direta
+a p38α; este trabalho avalia computacionalmente, por dinamica molecular classica, se
+a pose de docking predita nesse sitio especifico e estruturalmente estavel ao longo
+do tempo.
 
 ## 2. Metodologia
 
@@ -90,27 +100,27 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | 0.298 ± 0.046 nm |
-| RMSD ligante (UNL) | 0.038 ± 0.012 nm |
-| Raio de giro (receptor) | 2.212 ± 0.025 nm |
-| Contatos receptor-ligante (<0,4nm) | 318.2 ± 33.8 |
-| Pontes de hidrogenio receptor-ligante | 1.47 ± 0.77 |
-| SASA receptor | 181.857 ± 2.956 nm² |
-| SASA ligante | 4.665 ± 0.156 nm² |
+| RMSD backbone receptor | N/D (rodar as analises) |
+| RMSD ligante (UNL) | N/D (rodar as analises) |
+| Raio de giro (receptor) | N/D (rodar as analises) |
+| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
+| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
+| SASA receptor | N/D (rodar as analises) |
+| SASA ligante | N/D (rodar as analises) |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Met109 | 1.9 Å | Hidrogenio | 2.13 Å |
-| Thr106 | 3.8 Å | Hidrofobica | 2.71 Å |
-| Leu167 | 3.7 Å | Hidrofobica | 2.62 Å |
+| Met109 | 1.9 Å | Hidrogenio | N/D Å |
+| Thr106 | 3.8 Å | Hidrofobica | N/D Å |
+| Leu167 | 3.7 Å | Hidrofobica | N/D Å |
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
-ΔG total: **-25.33 ± 3.08 kcal/mol**
+ΔG total: **N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar como opcional, ja falhou de forma irreconciliavel em outro projeto deste laboratorio, ver Milena-MD)**
 
-
+*(resultados ainda nao gerados — rodar o pipeline Nextflow completo)*
 
 ### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
 
@@ -119,9 +129,10 @@ fabricar numeros de terceiros aqui — buscar e citar explicitamente):
 
 - [ ] Comparar RMSD/RMSF obtidos com faixas tipicas reportadas para p38 alfa MAPK em MD
       (buscar literatura especifica antes de citar valores).
-- [ ] Buscar na literatura estudos computacionais ou experimentais de Liquiritigenina
-      ligando p38 alfa MAPK (ou alvos homologos) e comparar modo de ligacao /
-      residuos-chave / valores de ΔG de ligacao.
+- [x] Liquiritigenina x p38 MAPK (funcional, via IRAK4 upstream, nao ligacao
+      direta a p38α): Yan et al. 2025 (PMID 40447172) — unico estudo
+      encontrado ate agora; nao ha ainda docking/MD publicado especificamente
+      no bolso ATP/hinge do p38α (PDB 4R3C) pra comparar modo de ligacao.
 - [ ] Comparar robustez metodologica (protocolo de equilibracao, cutoffs, forca de
       POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
       (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —
