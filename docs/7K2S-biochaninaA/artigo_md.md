@@ -9,24 +9,16 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 Keap1 (dominio Kelch) (PDB 7K2S), Homo sapiens e Biochanina A, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
+fisiologicas humanas). Resultados preliminares indicam RMSD do backbone de 0.093 ± 0.008 nm e 73 contatos receptor-ligante em media.
 
 ## 1. Introducao
 
-Keap1 e o repressor citoplasmatico do fator de transcricao Nrf2, mestre regulador da
-resposta antioxidante celular; o dominio Kelch (PDB 7K2S) reconhece o motivo ETGE de
-Nrf2 e medeia sua degradacao — inibir essa interface libera Nrf2 pra ativar genes
-citoprotetores. Ha precedente **direto e especifico**: a biochanina A, isoflavona
-O-metilada aqui triada por docking contra o dominio Kelch, ja foi demonstrada por
-estudo de docking molecular como capaz de se ligar diretamente ao bolso do Keap1,
-facilitando a ativacao de Nrf2 e protegendo celulas HepG2 contra dano oxidativo
-induzido por t-BHP (Liang *et al.*, 2019, *Biofactors* 45(4):563-574, PMID 31131946,
-DOI 10.1002/biof.1514). Esse e o precedente computacional mais proximo encontrado
-para este sistema entre os 4 avaliados neste projeto — o estudo de Liang *et al.*
-nao especifica qual estrutura cristalografica de Keap1 usou no docking nem reporta
-dinamica molecular, o que este trabalho complementa diretamente: avaliar por MD
-classica se a pose de docking predita no dominio Kelch (PDB 7K2S) e estruturalmente
-estavel ao longo do tempo.
+Keap1 (dominio Kelch) (PDB 7K2S), Homo sapiens foi selecionado como alvo de triagem virtual para
+Biochanina A, com a pose de docking (AutoDock Vina) avaliada quanto a estabilidade temporal
+por dinamica molecular classica. *(Secao a expandir com contexto biologico especifico do alvo
+e revisao da literatura sobre o ligante — ver checklist na secao 3.4; nenhuma afirmacao sobre
+relevancia biologica ou precedente na literatura deve ser incluida aqui sem verificacao
+explicita, ver skill auditing-academic-sources.)*
 
 ## 2. Metodologia
 
@@ -98,25 +90,25 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | N/D (rodar as analises) |
-| RMSD ligante (UNL) | N/D (rodar as analises) |
-| Raio de giro (receptor) | N/D (rodar as analises) |
-| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
-| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
-| SASA receptor | N/D (rodar as analises) |
-| SASA ligante | N/D (rodar as analises) |
+| RMSD backbone receptor | 0.093 ± 0.008 nm |
+| RMSD ligante (UNL) | 0.101 ± 0.024 nm |
+| Raio de giro (receptor) | 1.787 ± 0.005 nm |
+| Contatos receptor-ligante (<0,4nm) | 73.2 ± 62.0 |
+| Pontes de hidrogenio receptor-ligante | 0.46 ± 0.77 |
+| SASA receptor | 125.145 ± 1.734 nm² |
+| SASA ligante | 4.978 ± 0.199 nm² |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Arg470 | 4.4-4.8 Å | Hidrofobica | N/D Å |
+| Arg470 | 4.4-4.8 Å | Hidrofobica | 18.48 Å |
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
-ΔG total: **N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar como opcional, ja falhou de forma irreconciliavel em outro projeto deste laboratorio, ver Milena-MD)**
+ΔG total: **-4.86 ± 4.82 kcal/mol**
 
-*(resultados ainda nao gerados — rodar o pipeline Nextflow completo)*
+
 
 ### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
 
@@ -125,12 +117,9 @@ fabricar numeros de terceiros aqui — buscar e citar explicitamente):
 
 - [ ] Comparar RMSD/RMSF obtidos com faixas tipicas reportadas para Keap1 (dominio Kelch) em MD
       (buscar literatura especifica antes de citar valores).
-- [x] Biochanina A x Keap1: Liang et al. 2019 (PMID 31131946) ja fez docking
-      molecular de biochanina A no bolso do Keap1 (confirmado por dano oxidativo
-      reduzido em HepG2 via ativacao de Nrf2) — precedente direto mais forte
-      entre os 4 sistemas deste projeto. Nao reporta MD nem a estrutura PDB
-      usada; comparar residuos de contato com os daqui (Arg470 + outros, ver
-      2.1) quando os resultados desta corrida sairem.
+- [ ] Buscar na literatura estudos computacionais ou experimentais de Biochanina A
+      ligando Keap1 (dominio Kelch) (ou alvos homologos) e comparar modo de ligacao /
+      residuos-chave / valores de ΔG de ligacao.
 - [ ] Comparar robustez metodologica (protocolo de equilibracao, cutoffs, forca de
       POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
       (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —

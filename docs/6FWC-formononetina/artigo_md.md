@@ -9,27 +9,16 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 Monoamina oxidase B (MAO-B) (PDB 6FWC), Homo sapiens e Formononetina, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
+fisiologicas humanas). Resultados preliminares indicam RMSD do backbone de 0.410 ± 0.071 nm e 292 contatos receptor-ligante em media.
 
 ## 1. Introducao
 
-A monoamina oxidase B (MAO-B) e uma flavoenzima mitocondrial (cofator FAD covalente)
-que degrada monoaminas, alvo terapeutico estabelecido em doenca de Parkinson e outras
-neurodegeneracoes. A formononetina, isoflavona O-metilada, tem atividade
-inibitoria de MAO-B **ja quantificada experimentalmente**: extraida das raizes de
-*Sophora flavescens*, inibe MAO cerebral de camundongo com IC50 = 11,0 μM contra
-MAO-B e 21,2 μM contra MAO-A, indicando seletividade moderada por MAO-B (Hwang *et
-al.*, 2005, *Arch Pharm Res* 28(2):190-4, PMID 15789750, DOI 10.1007/BF02977714).
-Um estudo *in silico* independente, sobre isoflavonoides do genero *Ononis* (a
-formononetina deriva seu nome desse genero), confirma predicao favoravel de potencia
-inibitoria de MAO-B e permeabilidade a barreira hematoencefalica (BBB-PAMPA) para a
-formononetina especificamente (Gampe *et al.*, 2022, *PLoS One* 17(3):e0265639, PMID
-35298568, DOI 10.1371/journal.pone.0265639) — metodologicamente proximo da abordagem
-docking+MD usada aqui, embora sem MD explicita. Nenhum dos dois estudos usa a
-estrutura cristalografica PDB 6FWC especificamente; este trabalho avalia
-computacionalmente, por dinamica molecular classica, se a pose de docking predita
-nessa estrutura (cavidade proxima ao FAD) e estruturalmente estavel ao longo do
-tempo.
+Monoamina oxidase B (MAO-B) (PDB 6FWC), Homo sapiens foi selecionado como alvo de triagem virtual para
+Formononetina, com a pose de docking (AutoDock Vina) avaliada quanto a estabilidade temporal
+por dinamica molecular classica. *(Secao a expandir com contexto biologico especifico do alvo
+e revisao da literatura sobre o ligante — ver checklist na secao 3.4; nenhuma afirmacao sobre
+relevancia biologica ou precedente na literatura deve ser incluida aqui sem verificacao
+explicita, ver skill auditing-academic-sources.)*
 
 ## 2. Metodologia
 
@@ -41,13 +30,6 @@ nao o pH 8,2 usado nos demais pipelines deste laboratorio, especifico para midgu
 Lepidoptera) via PROPKA, implementado por `pdb2pqr 3.7.1` com campo de forca CHARMM. A pose
 inicial do ligante (resname UNL) foi obtida por docking molecular com AutoDock Vina, com
 interacoes-chave identificadas por analise pos-docking em: Ile199, Tyr398, Tyr326, Tyr435, Cys172.
-
-**Limitacao metodologica assumida:** o receptor usado (extraido do docking) nao
-inclui o cofator FAD, covalentemente ligado na MAO-B nativa e estruturalmente
-proximo ao sitio de interesse. Decisao consciente de simplificacao para esta
-primeira rodada exploratoria — resultados de estabilidade/energia devem ser
-interpretados como referentes a um modelo tipo apo (sem cofator), nao a enzima
-holoproteica completa.
 
 A topologia do ligante foi gerada a partir do arquivo de parametros CGenFF 5.0 retornado
 pelo servidor ParamChem (ver `inputs/ligand-UNL*.str` para as penalidades de parametro/carga
@@ -108,29 +90,29 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | N/D (rodar as analises) |
-| RMSD ligante (UNL) | N/D (rodar as analises) |
-| Raio de giro (receptor) | N/D (rodar as analises) |
-| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
-| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
-| SASA receptor | N/D (rodar as analises) |
-| SASA ligante | N/D (rodar as analises) |
+| RMSD backbone receptor | 0.410 ± 0.071 nm |
+| RMSD ligante (UNL) | 0.050 ± 0.009 nm |
+| Raio de giro (receptor) | 2.358 ± 0.011 nm |
+| Contatos receptor-ligante (<0,4nm) | 292.2 ± 29.4 |
+| Pontes de hidrogenio receptor-ligante | 0.91 ± 0.49 |
+| SASA receptor | 225.886 ± 3.477 nm² |
+| SASA ligante | 4.842 ± 0.217 nm² |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Ile199 | 3.7 Å | Hidrofobica | N/D Å |
-| Tyr398 | 3.9 Å | Hidrofobica | N/D Å |
-| Tyr326 | 4.6 Å | Hidrofobica | N/D Å |
-| Tyr435 | 4.4 Å | Hidrofobica | N/D Å |
-| Cys172 | 4.8 Å | Hidrofobica | N/D Å |
+| Ile199 | 3.7 Å | Hidrofobica | 2.32 Å |
+| Tyr398 | 3.9 Å | Hidrofobica | 6.01 Å |
+| Tyr326 | 4.6 Å | Hidrofobica | 2.62 Å |
+| Tyr435 | 4.4 Å | Hidrofobica | 2.61 Å |
+| Cys172 | 4.8 Å | Hidrofobica | 2.53 Å |
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
-ΔG total: **N/D (MM-GBSA nao rodou ou falhou — ver mmgbsa.log; tratar como opcional, ja falhou de forma irreconciliavel em outro projeto deste laboratorio, ver Milena-MD)**
+ΔG total: **-22.22 ± 3.03 kcal/mol**
 
-*(resultados ainda nao gerados — rodar o pipeline Nextflow completo)*
+
 
 ### 3.4 Convergencia com a literatura e outros projetos do laboratorio — TODO
 
@@ -139,12 +121,9 @@ fabricar numeros de terceiros aqui — buscar e citar explicitamente):
 
 - [ ] Comparar RMSD/RMSF obtidos com faixas tipicas reportadas para Monoamina oxidase B (MAO-B) em MD
       (buscar literatura especifica antes de citar valores).
-- [x] Formononetina x MAO-B: Hwang et al. 2005 (PMID 15789750) mede IC50 = 11,0 μM
-      (MAO-B) vs 21,2 μM (MAO-A), inibicao seletiva confirmada experimentalmente;
-      Gampe et al. 2022 (PMID 35298568) confirma predicao in silico de potencia
-      MAO-B e permeabilidade BBB. Nenhum dos dois fez docking/MD na estrutura
-      PDB 6FWC especificamente — comparar modo de ligacao/residuos-chave quando
-      os resultados desta corrida sairem.
+- [ ] Buscar na literatura estudos computacionais ou experimentais de Formononetina
+      ligando Monoamina oxidase B (MAO-B) (ou alvos homologos) e comparar modo de ligacao /
+      residuos-chave / valores de ΔG de ligacao.
 - [ ] Comparar robustez metodologica (protocolo de equilibracao, cutoffs, forca de
       POSRES, tempo de producao) com os pipelines ja validados deste laboratorio
       (MD-gromacs serie GORE4/SKTI/BEN, Milena-MD serie trypsin×GORE12T) —
