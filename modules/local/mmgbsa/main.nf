@@ -166,9 +166,20 @@ process MMGBSA {
     fi
 
     # ── 5. mmgbsa.in ──────────────────────────────────────────────────────
-    # radiopt=0: CHARMM/CGenFF exige usar os raios ja definidos na propria
-    # topologia (nao o mbondi2 default de sistemas AMBER) — documentado
-    # oficialmente como obrigatorio p/ conversao GROMACS-CHARMM via ParmEd.
+    # PBRadii=7 (charmm_radii): CHARMM/CGenFF exige usar os raios ja
+    # definidos na propria topologia (nao o mbondi2 default de sistemas
+    # AMBER). BUG CORRIGIDO 2026-07-28: a variavel usada aqui antes era
+    # `radiopt=0` dentro de &general -- radiopt EXISTE no parser do
+    # gmx_MMPBSA (GMXMMPBSA/input_parser.py), mas pertence ao namelist
+    # &pb (Poisson-Boltzmann, "Use optimized radii?"), nao &general, e nao
+    # tem esse efeito nenhum em GB puro (igb=2, nao PB). A variavel CERTA
+    # pro que o comentario original queria (raios CHARMM na conversao
+    # GROMACS->AMBER via ParmEd) e' `PBRadii` em &general — confirmado lendo
+    # GMXMMPBSA/make_top.py: PBRadii=7 mapeia pra 'charmm_radii', com check
+    # explicito no codigo que so permite esse valor pra topologia NAO-amber
+    # (nosso caso, CHARMM36). `radiopt=0,` dava
+    # "InputError: Unknown variable radiopt in &general" e abortava o
+    # gmx_MMPBSA antes de qualquer calculo (gmx_MMPBSA v1.5.0.3, mmgbsa-env).
     # print_res="within 6": limita a decomposicao aos residuos na interface
     # (6 A do ligante) -- sem isso, idecomp=2 decompoe TODO residuo do
     # receptor (~275 no dominio de ligacao a DNA do 2I9T), inviabilizando o
@@ -181,7 +192,7 @@ startframe=${startframe},
 endframe=${endframe},
 interval=${interval},
 verbose=2,
-radiopt=0,
+PBRadii=7,
 /
 &gb
 igb=2,
