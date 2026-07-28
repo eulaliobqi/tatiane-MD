@@ -9,7 +9,10 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 Monoamina oxidase B (MAO-B) (PDB 6FWC), Homo sapiens e Formononetina, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
+fisiologicas humanas). A pose de docking se manteve razoavelmente estavel ao longo dos
+100 ns (RMSD backbone 0,410 ± 0,071 nm, o maior desvio entre os 4 sistemas avaliados),
+com 4 dos 5 residuos-chave do docking mantendo distancia proxima da predicao original —
+excecao para Tyr398, que se afastou (3,9 Å previsto → 6,01 ± 1,31 Å na simulacao).
 
 ## 1. Introducao
 
@@ -108,23 +111,23 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | N/D (rodar as analises) |
-| RMSD ligante (UNL) | N/D (rodar as analises) |
-| Raio de giro (receptor) | N/D (rodar as analises) |
-| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
-| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
-| SASA receptor | N/D (rodar as analises) |
-| SASA ligante | N/D (rodar as analises) |
+| RMSD backbone receptor | 0.410 ± 0.071 nm |
+| RMSD ligante (UNL) | 0.050 ± 0.009 nm |
+| Raio de giro (receptor) | 2.358 ± 0.011 nm |
+| Contatos receptor-ligante (<0,4nm) | 292.2 ± 29.4 |
+| Pontes de hidrogenio receptor-ligante | 0.91 ± 0.49 |
+| SASA receptor | 225.89 ± 3.48 nm² |
+| SASA ligante | 4.84 ± 0.22 nm² |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Ile199 | 3.7 Å | Hidrofobica | N/D Å |
-| Tyr398 | 3.9 Å | Hidrofobica | N/D Å |
-| Tyr326 | 4.6 Å | Hidrofobica | N/D Å |
-| Tyr435 | 4.4 Å | Hidrofobica | N/D Å |
-| Cys172 | 4.8 Å | Hidrofobica | N/D Å |
+| Ile199 | 3.7 Å | Hidrofobica | 2.32 ± 0.19 Å |
+| Tyr398 | 3.9 Å | Hidrofobica | 6.01 ± 1.31 Å |
+| Tyr326 | 4.6 Å | Hidrofobica | 2.62 ± 0.23 Å |
+| Tyr435 | 4.4 Å | Hidrofobica | 2.61 ± 0.43 Å |
+| Cys172 | 4.8 Å | Hidrofobica | 2.53 ± 0.37 Å |
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 

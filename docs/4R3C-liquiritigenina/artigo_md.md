@@ -9,7 +9,9 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 p38 alfa MAPK (PDB 4R3C), Homo sapiens e Liquiritigenina, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
+fisiologicas humanas). A pose de docking se manteve estruturalmente estavel ao longo dos
+100 ns (RMSD backbone 0,298 ± 0,046 nm), com os 3 residuos-chave identificados no docking
+(Met109, Thr106, Leu167) mantendo distancia media proxima da predicao original.
 
 ## 1. Introducao
 
@@ -100,21 +102,21 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | N/D (rodar as analises) |
-| RMSD ligante (UNL) | N/D (rodar as analises) |
-| Raio de giro (receptor) | N/D (rodar as analises) |
-| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
-| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
-| SASA receptor | N/D (rodar as analises) |
-| SASA ligante | N/D (rodar as analises) |
+| RMSD backbone receptor | 0.298 ± 0.046 nm |
+| RMSD ligante (UNL) | 0.038 ± 0.012 nm |
+| Raio de giro (receptor) | 2.212 ± 0.025 nm |
+| Contatos receptor-ligante (<0,4nm) | 318.2 ± 33.8 |
+| Pontes de hidrogenio receptor-ligante | 1.47 ± 0.77 |
+| SASA receptor | 181.86 ± 2.96 nm² |
+| SASA ligante | 4.67 ± 0.16 nm² |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Met109 | 1.9 Å | Hidrogenio | N/D Å |
-| Thr106 | 3.8 Å | Hidrofobica | N/D Å |
-| Leu167 | 3.7 Å | Hidrofobica | N/D Å |
+| Met109 | 1.9 Å | Hidrogenio | 2.13 ± 0.23 Å |
+| Thr106 | 3.8 Å | Hidrofobica | 2.71 ± 0.17 Å |
+| Leu167 | 3.7 Å | Hidrofobica | 2.62 ± 0.24 Å |
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 

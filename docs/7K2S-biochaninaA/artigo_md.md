@@ -9,7 +9,10 @@ Este trabalho investigou por dinamica molecular (100 ns) a estabilidade do compl
 Keap1 (dominio Kelch) (PDB 7K2S), Homo sapiens e Biochanina A, um candidato identificado por triagem
 virtual (AutoDock Vina). O sistema foi parametrizado com o campo de forca CHARMM36m (proteina) e
 CGenFF 5.0 via ParamChem (ligante), em agua TIP3P explicita e NaCl 0,15 M (condicoes
-fisiologicas humanas). Simulacao ainda nao executada — secao a preencher apos o pipeline Nextflow rodar.
+fisiologicas humanas). O receptor permaneceu extremamente estavel ao longo dos 100 ns
+(RMSD backbone 0,093 ± 0,008 nm, o mais baixo entre os 4 sistemas avaliados), mas o
+unico residuo-chave identificado no docking (Arg470) nao manteve a distancia prevista —
+ver secao 3.2 e observacao associada.
 
 ## 1. Introducao
 
@@ -98,19 +101,27 @@ contatos/H-bonds/SASA) permanece valido e completo.
 
 | Metrica | Valor (media ± DP) |
 |---|---|
-| RMSD backbone receptor | N/D (rodar as analises) |
-| RMSD ligante (UNL) | N/D (rodar as analises) |
-| Raio de giro (receptor) | N/D (rodar as analises) |
-| Contatos receptor-ligante (<0,4nm) | N/D (rodar as analises) |
-| Pontes de hidrogenio receptor-ligante | N/D (rodar as analises) |
-| SASA receptor | N/D (rodar as analises) |
-| SASA ligante | N/D (rodar as analises) |
+| RMSD backbone receptor | 0.093 ± 0.008 nm |
+| RMSD ligante (UNL) | 0.101 ± 0.024 nm |
+| Raio de giro (receptor) | 1.787 ± 0.005 nm |
+| Contatos receptor-ligante (<0,4nm) | 73.2 ± 62.0 |
+| Pontes de hidrogenio receptor-ligante | 0.46 ± 0.77 |
+| SASA receptor | 125.14 ± 1.73 nm² |
+| SASA ligante | 4.98 ± 0.20 nm² |
 
 ### 3.2 Persistencia dos contatos preditos por docking
 
 | Residuo | Distancia docking | Tipo (docking) | Distancia media MD |
 |---|---|---|---|
-| Arg470 | 4.4-4.8 Å | Hidrofobica | N/D Å |
+| Arg470 | 4.4-4.8 Å | Hidrofobica | 18.48 ± 12.78 Å |
+
+**Observacao**: apesar do receptor ter permanecido extremamente estavel (RMSD backbone
+0,093 nm, o mais baixo dos 4 sistemas), o contato Arg470 previsto pelo docking nao se
+manteve na simulacao — a distancia media (18,48 Å) e muito maior que a predicao original
+(4,4-4,8 Å), com desvio-padrao alto (12,78 Å) indicando grande variabilidade. Isso e
+consistente com a energia de ligacao MM-GBSA mais fraca entre os 4 sistemas (secao 3.3) e
+com o fato de o docking ter previsto apenas 1 residuo de contato para este sistema (contra
+3-5 nos demais), sem nenhuma interacao do tipo ponte de hidrogenio.
 
 ### 3.3 Energia livre de ligacao (MM-GBSA)
 
