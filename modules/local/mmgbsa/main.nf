@@ -166,20 +166,42 @@ process MMGBSA {
     fi
 
     # ── 5. mmgbsa.in ──────────────────────────────────────────────────────
-    # PBRadii=7 (charmm_radii): CHARMM/CGenFF exige usar os raios ja
-    # definidos na propria topologia (nao o mbondi2 default de sistemas
-    # AMBER). BUG CORRIGIDO 2026-07-28: a variavel usada aqui antes era
+    # PBRadii=3 (mbondi2): raios definidos por NUMERO ATOMICO (elemento),
+    # nao por nome de residuo -- funciona pra qualquer molecula.
+    #
+    # BUG #1 CORRIGIDO 2026-07-28: a variavel usada aqui antes era
     # `radiopt=0` dentro de &general -- radiopt EXISTE no parser do
     # gmx_MMPBSA (GMXMMPBSA/input_parser.py), mas pertence ao namelist
     # &pb (Poisson-Boltzmann, "Use optimized radii?"), nao &general, e nao
-    # tem esse efeito nenhum em GB puro (igb=2, nao PB). A variavel CERTA
-    # pro que o comentario original queria (raios CHARMM na conversao
-    # GROMACS->AMBER via ParmEd) e' `PBRadii` em &general — confirmado lendo
-    # GMXMMPBSA/make_top.py: PBRadii=7 mapeia pra 'charmm_radii', com check
-    # explicito no codigo que so permite esse valor pra topologia NAO-amber
-    # (nosso caso, CHARMM36). `radiopt=0,` dava
+    # tem esse efeito nenhum em GB puro (igb=2, nao PB). Dava
     # "InputError: Unknown variable radiopt in &general" e abortava o
-    # gmx_MMPBSA antes de qualquer calculo (gmx_MMPBSA v1.5.0.3, mmgbsa-env).
+    # gmx_MMPBSA antes de qualquer calculo.
+    #
+    # BUG #2 CORRIGIDO 2026-07-28 (mesmo dia, achado DEPOIS do #1): a
+    # correcao inicial usou `PBRadii=7` (charmm_radii), que parecia ser a
+    # opcao "oficialmente correta" pra CHARMM (confirmado lendo
+    # GMXMMPBSA/make_top.py: so permite esse valor pra topologia
+    # NAO-amber). PORÉM `charmm_radii` (parmed/tools/changeradii.py) so
+    # define raio por NOME DE RESIDUO — cobre os 20 aminoacidos padrao +
+    # acidos nucleicos + agua/ions, mas NAO tem nenhuma regra pro residuo
+    # do ligante (UNL, CGenFF, nome arbitrario). Sem raio definido, o
+    # calculo de Born diverge: EGB = -Infinity pro ligante (confirmado nos
+    # `.mdout` do sander, ja no frame 1) e NaN se propaga pro Complex e
+    # pro Receptor via a media entre frames -- ΔTOTAL saia sempre `nan`
+    # mesmo com o gmx_MMPBSA "terminando com sucesso" (sem erro fatal, so
+    # silenciosamente sem resultado valido). `PBRadii=3` (mbondi2, funcao
+    # `mbondi2()` no mesmo arquivo do ParmEd) atribui raio por
+    # atom.atomic_number, nao por atom.residue.name — cobre a proteina E
+    # o ligante igualmente bem. Validado manualmente (5 frames, 2I9T):
+    # ΔTOTAL = -7.63 kcal/mol, valor finito e fisicamente plausivel (vs.
+    # NaN garantido com PBRadii=7 sempre que houver ligante nao-padrao).
+    # Trade-off aceito: mbondi2 nao e' o raio CHARMM-nativo pro RECEPTOR
+    # (que teria PBRadii=7 se fosse so proteina/acido-nucleico/agua/ion),
+    # mas e' a unica opcao das 7 que cobre ligante arbitrario sem crashar
+    # -- normal na pratica pra sistemas CHARMM+ligante nao-padrao (mesma
+    # limitacao seria encontrada em qualquer outro pipeline gmx_MMPBSA
+    # nessa combinacao).
+    #
     # print_res="within 6": limita a decomposicao aos residuos na interface
     # (6 A do ligante) -- sem isso, idecomp=2 decompoe TODO residuo do
     # receptor (~275 no dominio de ligacao a DNA do 2I9T), inviabilizando o
@@ -192,7 +214,7 @@ startframe=${startframe},
 endframe=${endframe},
 interval=${interval},
 verbose=2,
-PBRadii=7,
+PBRadii=3,
 /
 &gb
 igb=2,
