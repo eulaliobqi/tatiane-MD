@@ -92,7 +92,21 @@ def read_mmgbsa_total(mmgbsa_dir):
     text = dat.read_text(errors="ignore")
     if "No results" in text or "failed" in text.lower():
         return None
-    # Formato tipico do gmx_MMPBSA: bloco "DELTA TOTAL" com media/desvio
+    # gmx_MMPBSA >=1.5 escreve "DTOTAL <Average> <SD(Prop.)> <SD> <SEM(Prop.)> <SEM>"
+    # (simbolo grego, sem espaco antes de TOTAL) -- versoes mais antigas
+    # escreviam "DELTA TOTAL <avg> <stddev>" (2 colunas so). BUG CORRIGIDO
+    # 2026-07-28: o regex so cobria o formato antigo, entao mesmo com
+    # FINAL_RESULTS_MMGBSA.dat valido (sem "No results"/"failed") o artigo
+    # sempre saia "N/D" -- confirmado rodando contra os 4 sistemas deste
+    # projeto (gmx_MMPBSA v1.5.0.3, formato novo). Usa a coluna "SD" (real,
+    # 3a coluna), nao "SD(Prop.)" (propagacao de erro, 2a coluna, sempre bem
+    # menor e menos informativa sobre a variancia real entre frames) --
+    # mesma convencao de "media ± SD" usada no resto deste pipeline
+    # (RMSD/RMSF/etc. em gerar_artigo_md.py, nao SEM).
+    m = re.search(r"[ΔD]TOTAL\s+(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s+(-?\d+\.?\d*)", text)
+    if m:
+        return float(m.group(1)), float(m.group(3))
+    # Fallback formato antigo (2 colunas: avg, stddev)
     m = re.search(r"DELTA TOTAL\s+(-?\d+\.?\d*)\s+(\d+\.?\d*)", text)
     if m:
         return float(m.group(1)), float(m.group(2))
