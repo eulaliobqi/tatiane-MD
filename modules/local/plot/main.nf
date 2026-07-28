@@ -9,6 +9,7 @@ process PLOT {
 
     output:
     tuple val(meta), path("painel_resumo.png"), emit: png
+    tuple val(meta), path("figuras/*.png"), emit: png_individual
 
     script:
     """
@@ -19,6 +20,7 @@ process PLOT {
         --analise-dir analise_dir \\
         --titulo "${meta.target_name ?: meta.id} + ${meta.ligand_name ?: 'ligante'} — resumo da dinamica molecular" \\
         --window-ns ${params.window_ns} \\
-        --out painel_resumo.png
+        --out painel_resumo.png \\
+        --figures-dir figuras
     """
 }

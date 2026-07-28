@@ -16,7 +16,8 @@ process FE_RERUN {
 
     input:
     tuple val(meta), path(complexo_gro), path(top, stageAs: 'input.top'),
-                     path(itps, stageAs: 'itp_in/*'), path(fe_xtc), path(lig_ndx)
+                     path(itps, stageAs: 'itp_in/*'), path(prms, stageAs: 'prm_in/*'),
+                     path(fe_xtc), path(lig_ndx)
 
     output:
     tuple val(meta), path("interaction_energy.xvg"), emit: energy
@@ -27,6 +28,7 @@ process FE_RERUN {
     echo "=== FE_RERUN: ${meta.id} (${meta.phase}) ===" >&2
     cp ${top} topol.top
     cp itp_in/*.itp .
+    cp prm_in/*.prm . 2>/dev/null || true
     cp -r ${projectDir}/ff/charmm36-feb2026_cgenff-5.0.ff .
 
     {

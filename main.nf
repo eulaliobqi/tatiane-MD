@@ -233,11 +233,11 @@ workflow {
         )
         .combine(
             BOX_SOLVATE_IONS.out.system
-                .map { meta, gro, top, itps, prms -> tuple(meta.id, top, itps) },
+                .map { meta, gro, top, itps, prms -> tuple(meta.id, top, itps, prms) },
             by: 0
         )
-        .map { id, meta, xtc, ndx, prod_gro, top, itps ->
-            tuple(meta, prod_gro, top, itps, xtc, ndx)
+        .map { id, meta, xtc, ndx, prod_gro, top, itps, prms ->
+            tuple(meta, prod_gro, top, itps, prms, xtc, ndx)
         }
 
     FE_RERUN(ch_fe_input)
